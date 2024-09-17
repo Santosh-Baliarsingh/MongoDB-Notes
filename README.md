@@ -397,7 +397,7 @@ test> use users
 then use the following command to create a document:
 
 ```sh
-users> db.userData.insetOne( {
+users> db.userData.insertOne( {
   name: "John Doe",
   age: 30,
   email: "john.doe@example.com"
@@ -422,7 +422,7 @@ Expected Output:
 The `insertMany` method inserts multiple documents into a collection at once. Here is an example:
 
 ```sh
-users> db.userData.insetOne([
+users> db.userData.insertMany([
   {
     name: "Jane Doe",
     age: 25,

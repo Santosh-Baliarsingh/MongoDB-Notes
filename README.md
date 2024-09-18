@@ -36,6 +36,12 @@
   - [Create a Document](#create-a-document)
     - [insertOne Method](#insertone-method)
     - [insertMany Method](#insertmany-method)
+  - [Read a Document](#read-a-document)
+    - [find Method](#find-method)
+    - [find Method with Query](#find-method-with-query)
+    - [find Method with Projection](#find-method-with-projection)
+    - [findOne Method with Query](#findone-method-with-query)
+    - [findOne Method with Projection](#findone-method-with-projection)
 
 ## What is MongoDB?
 
@@ -275,8 +281,8 @@ A document is a record in a MongoDB collection. It is a data structure composed 
 
 Here is an example to illustrate the relationship between databases, collections, and documents:
 
-- **Database**: `myDatabase`
-  - **Collection**: `users`
+- **Database**: `users`
+  - **Collection**: `userData`
     - **Document**:
   
       ```json
@@ -290,9 +296,9 @@ Here is an example to illustrate the relationship between databases, collections
 
 In this example:
 
-- `myDatabase` is the database.
-- `users` is a collection within `myDatabase`.
-- The JSON object is a document within the `users` collection.
+- `users` is the database.
+- `userData` is a collection within `users`.
+- The JSON object is a document within the `userData` collection.
 
 Understanding these core concepts is essential for working effectively with MongoDB.
 
@@ -370,7 +376,7 @@ local   0.000GB
 To create a collection in MongoDB, you can use the `db.createCollection()` method. make sure first switch to the Database
 where you want to create the collection using `use` command
 
-```sh
+```javascript
 users> db.createCollection("userData");
 ```
 
@@ -386,17 +392,28 @@ Alternatively, you can create a collection implicitly by inserting a document in
 
 ### insertOne Method
 
-The `insertOne` method inserts a single document into a collection. Here is an example:
+The `insertOne` method inserts a single document into a collection.
+
+Syntax:
+
+```javascript
+db.collection.insertOne(documents, options)
+```
+
+- **documents:** The document to be inserted.
+- **options:**  Additional options for the insert operation.
 
 First, switch to the database where you want to create the document. If the database does not exist, MongoDB will create it for you.
 
-```sh
+Example:
+
+```javascript
 test> use users
 ```
 
 then use the following command to create a document:
 
-```sh
+```javascript
 users> db.userData.insertOne( {
   name: "John Doe",
   age: 30,
@@ -419,9 +436,20 @@ Expected Output:
 
 ### insertMany Method
 
-The `insertMany` method inserts multiple documents into a collection at once. Here is an example:
+The `insertMany` method inserts multiple documents into a collection at once.
 
-```sh
+Syntax:
+
+```javascript
+db.collection.insertMany(documents, options)
+```
+
+- **documents:** An array of documents to be inserted.
+- **options:**  Additional options for the insert operation.
+
+Example:
+
+```javascript
 users> db.userData.insertMany([
   {
     name: "Jane Doe",
@@ -451,5 +479,215 @@ Expected Output:
     ObjectId("66e9b91d2af455ba16c73bfa"),
     ObjectId("66e9b91d2af455ba16c73bfb")
   ]
+}
+```
+
+## Read a Document
+
+### find Method
+
+The `find` method in MongoDB is used to query documents from a collection. It returns a cursor to the documents that match the query criteria.
+
+Syntax:
+
+```javascript
+db.collection.find(query, projection)
+```
+
+- **query:** Specifies the selection criteria using query operators.
+- **projection:** Specifies the fields to return in the documents that match the query criteria.
+
+Show all documents use `find` without any query
+
+Example:
+
+```javascript
+users> db.userData.find()
+```
+
+Expected Output:
+
+```sh
+[
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+    name: 'Jane Doe',
+    age: 25,
+    email: 'jane.doe@example.com'
+  },
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfa'),
+    name: 'Alice Smith',
+    age: 28,
+    email: 'alice.smith@example.com'
+  },
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfb'),
+    name: 'Bob Johnson',
+    age: 35,
+    email: 'bob.johnson@example.com'
+  }
+]
+```
+
+- ***Note:*** By default, the `find()` method returns documents in a compact JSON format, which can be difficult to read, especially when dealing with documents that have many fields or nested structures.
+- Using `pretty()` makes the output more human-readable by adding line breaks and indentation. This is particularly useful when you are inspecting documents directly in the MongoDB shell or when you want to present query results in documentation.
+  
+Syntax:
+
+```javascript
+users> db.userData.find().pretty()
+```
+
+### find Method with Query
+
+To find all documents in the `userData` collection where the `age` is greater than 25.
+
+Example:
+
+```javascript
+users> db.userData.find({ age: { $gt: 25 } })
+```
+
+Expected Output:
+
+```sh
+[
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfa'),
+    name: 'Alice Smith',
+    age: 28,
+    email: 'alice.smith@example.com'
+  },
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfb'),
+    name: 'Bob Johnson',
+    age: 35,
+    email: 'bob.johnson@example.com'
+  }
+]
+```
+
+- ***Note:*** If the query does not match any documents in the collection, the `find()` method will return an empty result set or nothing.
+  
+Example:
+
+```javascript
+users> db.userData.find({name : 'Santosh'})
+```
+
+Expected Output:
+
+```sh
+[]
+```
+
+### find Method with Projection
+
+To find all documents in the `userData` collection where the `age` is greater than 25, but only return the `name` and `age` fields.
+
+Example:
+
+```javascript
+users> db.userData.find({ age: { $gt: 25 } }, { name: 1, age: 1, _id: 0 })
+```
+
+Expected Output:
+
+```sh
+[ 
+  { name: 'Alice Smith', age: 28 },
+  { name: 'Bob Johnson', age: 35 } 
+]
+```
+
+This query will return all documents where the `age` field is greater than 25, but only include the `name` and `age` fields in the result, excluding the `_id` and `email` field.
+
+### findOne Method with Query
+
+The `findOne` method in MongoDB is used to retrieve a single document from a collection that matches the specified query criteria. If multiple documents match the query, it returns the first document according to the natural order of the documents in the collection.
+
+Syntax:
+
+```javascript
+db.collection.findOne(query, projection)
+```
+
+- **query** Specifies the selection criteria using query operators.
+- **projection** Specifies the fields to return in the document that matches the query criteria.
+
+***Example:***
+
+To find a single document in the `userData` collection where the `name` is `"Alice Smith"`:
+
+```javascript
+users> db.userData.findOne({ name: "Alice Smith" })
+```
+
+Expected Output:
+
+```sh
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bfa'),
+  name: 'Alice Smith',
+  age: 28,
+  email: 'alice.smith@example.com'
+}
+```
+
+- ***Note:*** 💡 MongoDB queries are case-sensitive by default.
+- for example if you change `'Smith'` to `'smith'` in your query then you'll get `null` as an output.
+
+Example:
+
+```javascript
+users> db.userData.findOne({ name: "Alice smith" })
+```
+
+Expected Output:
+
+```sh
+null
+```
+
+This indicates that no documents in the `userData` collection match the query criteria because `"smith"` does not match `"Smith"`.
+
+***With Regular Expression***
+
+If you want to perform a case-insensitive search, you can use a `regular expression` with the `i` option for case insensitivity:
+
+Example:
+
+```javascript
+users> db.userData.findOne({ name: { $regex: /^Alice smith$/i } })
+```
+
+Expected Output:
+
+```sh
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bfa'),
+  name: 'Alice Smith',
+  age: 28,
+  email: 'alice.smith@example.com'
+}
+```
+
+This query will match "Alice Smith" regardless of the case of "Smith".
+
+### findOne Method with Projection
+
+To find a single document in the `userData` collection where the `name` is `"Alice Smith"`, but only return the `name` and `age` fields.
+
+```javascript
+users> db.userData.findOne({ name: "Alice Smith" }, { name: 1, age: 1, _id: 0 })
+```
+
+Expected Output:
+
+```sh
+{
+  "name": "Alice Smith",
+  "age": 28
 }
 ```

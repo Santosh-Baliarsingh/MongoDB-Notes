@@ -1,4 +1,4 @@
-
+<!-- markdownlint-disable MD033 -->
 # MongoDB Reference
 
  ***I have recently started learning MongoDB and am compiling my notes here for reference. If you find this information useful, feel free to use it as a resource.***
@@ -42,6 +42,16 @@
     - [find Method with Projection](#find-method-with-projection)
     - [findOne Method with Query](#findone-method-with-query)
     - [findOne Method with Projection](#findone-method-with-projection)
+    - [find Method and Cursor Object](#find-method-and-cursor-object)
+  - [Update a Document](#update-a-document)
+    - [updateOne Method](#updateone-method)
+    - [updateMany Method](#updatemany-method)
+  - [Delete a Document](#delete-a-document)
+    - [deleteOne Method](#deleteone-method)
+    - [deleteMany Method](#deletemany-method)
+  - [Embedded Documents and Arrays](#embedded-documents-and-arrays)
+    - [Embedded Document](#embedded-document)
+    - [Arrays of Data](#arrays-of-data)
 
 ## What is MongoDB?
 
@@ -673,7 +683,7 @@ Expected Output:
 }
 ```
 
-This query will match "Alice Smith" regardless of the case of "Smith".
+This query will match `"Alice Smith"` regardless of the case of `"Smith"`.
 
 ### findOne Method with Projection
 
@@ -691,3 +701,750 @@ Expected Output:
   "age": 28
 }
 ```
+
+### find Method and Cursor Object
+
+The `find()` method returns a `cursor` object, which is a pointer to the result set of the query. The cursor allows you to iterate over the documents one by one.
+
+***Common Cursor Methods:***
+
+- **forEach():** Iterates over each document in the cursor.
+- **toArray():** Converts the cursor to an array of documents.
+- **next():** Retrieves the next document in the cursor.
+- **hasNext():** Checks if there are more documents in the cursor.
+  
+Example:
+
+***lets create a new database called ninja and a collection name ninjas***
+
+```javascript
+test> use ninja // create a new database and switch into it
+```
+
+***Create new collection name ninjas and add some data 👇🏻***
+<details>
+
+  <summary>Click to expand the Command</summary>
+
+  ```javascript
+  ninja> db.ninjas.insertMany([
+    {
+      "name": "Naruto Uzumaki",
+      "age": 30
+    },
+    {
+      "name": "Neji Hyuga",
+      "age": 27
+    },
+    {
+      "name": "Uchiha Sasuke",
+      "age": 35
+    },
+    {
+      "name": "Kakshi Hatake",
+      "age": 28
+    },
+    {
+      "name": "Madara Uchiha",
+      "age": 30
+    },
+    {
+      "name": "Minato Namikaze",
+      "age": 27
+    },
+    {
+      "name": "Kushina Uzumaki",
+      "age": 26
+    },
+    {
+      "name": "Hinata Hyuga",
+      "age": 25
+    },
+    {
+      "name": "Sakura Haruno",
+      "age": 29
+    },
+    {
+      "name": "Hashirama Senju",
+      "age": 41
+    },
+    {
+      "name": "Tsunade Senju",
+      "age": 48
+    },
+    {
+      "name": "Jiraiya",
+      "age": 39
+    },
+    {
+      "name": "Orochimaru",
+      "age": 22
+    },
+    {
+      "name": "Kabuto Yakushi",
+      "age": 44
+    },
+    {
+      "name": "Itachi Uchiha",
+      "age": 41
+    },
+    {
+      "name": "Shisui Uchiha",
+      "age": 35
+    },
+    {
+      "name": "Kisame Hoshigaki",
+      "age": 27
+    },
+    {
+      "name": "Deidara",
+      "age": 35
+    },
+    {
+      "name": "Sasori",
+      "age": 53
+    },
+    {
+      "name": "Hidan",
+      "age": 68
+    },
+    {
+      "name": "Kakuzu",
+      "age": 38
+    }
+  ])
+  ```
+
+  </details>
+
+***let see all the docments from ninjas collection***
+
+```javascript
+ninja> db.ninjas.find()
+```
+
+Expected Output:
+
+<details>
+<summary>Click to expand the Output</summary>
+
+```javascript
+[
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c0d'),
+    name: 'Naruto Uzumaki',
+    age: 30
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c0e'),
+    name: 'Neji Hyuga',
+    age: 27
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c0f'),
+    name: 'Uchiha Sasuke',
+    age: 35
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c10'),
+    name: 'Kakshi Hatake',
+    age: 28
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c11'),
+    name: 'Madara Uchiha',
+    age: 30
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c12'),
+    name: 'Minato Namikaze',
+    age: 27
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c13'),
+    name: 'Kushina Uzumaki',
+    age: 26
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c14'),
+    name: 'Hinata Hyuga',
+    age: 25
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c15'),
+    name: 'Sakura Haruno',
+    age: 29
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c16'),
+    name: 'Hashirama Senju',
+    age: 41
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c17'),
+    name: 'Tsunade Senju',
+    age: 48
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c18'),
+    name: 'Jiraiya',
+    age: 39
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c19'),
+    name: 'Orochimaru',
+    age: 22
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c1a'),
+    name: 'Kabuto Yakushi',
+    age: 44
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c1b'),
+    name: 'Itachi Uchiha',
+    age: 41
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c1c'),
+    name: 'Shisui Uchiha',
+    age: 35
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c1d'),
+    name: 'Kisame Hoshigaki',
+    age: 27
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c1e'),
+    name: 'Deidara',
+    age: 35
+  },
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c1f'),
+    name: 'Sasori',
+    age: 53
+  },
+  { _id: ObjectId('66eafaad654ecb3e79c73c20'), name: 'Hidan', age: 68 }
+]
+Type "it" for more
+```
+
+after enter `it` you'll see
+
+```javascript
+[
+  {
+    _id: ObjectId('66eafaad654ecb3e79c73c21'),
+    name: 'Kakuzu',
+    age: 38
+  }
+]
+```
+
+</details>
+
+- ***Note:*** The `it` command is a feature shown in the shell. lets say we have 1 million documents then it would take long time most importantly it would send a lots of data over the wire.
+  
+- so instead of that, it gives us back `cursor` object which is an object with a lot of metadata behind it that allows us to cycle through the results and that is what that `it` command did.
+  
+- `it` basically used that cursor to fetch the next bunch of data.
+  
+***Use toArray() method***
+
+```javascript
+ninja> db.ninjas.find().toArray()
+```
+
+If you execute the above command you'll see all the data without `it`
+
+***Use forEach() method***
+
+Example:
+
+```javascript
+ninja> const cursor = db.ninjas.find({ age: { $gt: 45 } });
+
+cursor.forEach(doc => {
+    printjson(doc);
+});
+```
+
+***Or***
+
+```javascript
+ninja> db.ninjas.find({ age: { $gt: 45 } }).forEach((ninja) => {
+    printjson(ninja);
+});
+```
+
+This example retrieves documents from the `ninjas` collection where the `age` field is greater than 45 and prints each document.
+
+Expected Output:
+
+```sh
+{
+  _id: ObjectId('66eafaad654ecb3e79c73c17'),
+  name: 'Tsunade Senju',
+  age: 48
+}
+{
+  _id: ObjectId('66eafaad654ecb3e79c73c1f'),
+  name: 'Sasori',
+  age: 53
+}
+{
+  _id: ObjectId('66eafaad654ecb3e79c73c20'),
+  name: 'Hidan',
+  age: 68
+}
+```
+
+- ***Note:*** Cursor is generally more efficient and flexible, especially when dealing with large datasets. It allows for better memory management, lazy evaluation, and more control over the query execution process.
+
+- Cursors provide methods to control the execution of the query, such as sort(), limit(), and skip(), allowing for more flexible and efficient data retrieval.
+
+## Update a Document
+
+### updateOne Method
+
+The `updateOne` method in MongoDB is used to update a single document that matches the specified filter criteria. If multiple documents match the filter, only the first matching document will be updated.
+
+Syntax:
+
+```javascript
+db.collection.updateOne(filter, update, options)
+```
+
+- **filter:** Specifies the selection criteria for the document to update.
+- **update:** Specifies the modifications to apply.
+- **options:** Optional. Additional options for the update operation.
+
+Example:
+
+```javascript
+users> db.userData.updateOne(
+  { name: "Alice Smith" }, // filter
+  { $set: { age: 29 } }    // update
+)
+```
+
+in this example:
+
+- `{ name: "Alice Smith" }` is the filter criteria to find the document.
+- `{ $set: { age: 29 } }` is the update operation that sets the age field to 29.
+- The `$set` operator in MongoDB is used to update the value of a field in a document without affecting other fields.
+
+Expected Output:
+
+```sh
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+```
+
+- ***Note:*** you can update a document using any filter criteria, including the document's `_id` or other fields.
+
+Example:
+
+```javascript
+users> db.userData.updateOne(
+  { _id: ObjectId("60c72b2f9af1f2d9d8e8b456") }, // filter by _id
+  { $set: { age: 30 } }                         // update
+)
+```
+
+Expected Output:
+
+```sh
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+```
+
+### updateMany Method
+
+The `updateMany` method in MongoDB is used to update multiple documents that match the specified filter criteria. Unlike `updateOne`, which updates only the first matching document, `updateMany` updates all documents that match the filter.
+
+Syntax:
+
+```javascript
+db.collection.updateMany(filter, update, options)
+```
+
+- **filter:** Specifies the selection criteria for the documents to update.
+- **update:** Specifies the modifications to apply.
+- **options:** Optional. Additional options for the update operation.
+
+**Suppose you want to `update` all documents in the collection:**
+
+Example:
+
+```javascript
+users> db.userData.updateMany(
+  {}, // filter to match all documents
+  { $set: { city: "New York" } } // update to add the city field
+)
+```
+
+Expected Output:
+
+```sh
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 3,
+  modifiedCount: 3,
+  upsertedCount: 0
+}
+```
+
+Now if you want to check whether the `city` field has been updated or not, you can use following command
+
+```javascript
+users> db.userData.find()
+```
+
+Expected Output:
+
+```sh
+[
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+    name: 'Jane Doe',
+    age: 30,
+    email: 'jane.doe@example.com',
+    city: 'New York'
+  },
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfa'),
+    name: 'Alice Smith',
+    age: 29,
+    email: 'alice.smith@example.com',
+    city: 'New York'
+  },
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfb'),
+    name: 'Bob Johnson',
+    age: 35,
+    email: 'bob.johnson@example.com',
+    city: 'New York'
+  }
+]
+```
+
+- ***Note:*** If you want to add certain field to all documents, you can use an empty filter `{}` to match all documents.
+
+**Suppose you want to `update` a single document.**
+
+Example:
+
+```javascript
+users> db.users.updateMany(
+  { city: "New York" }, // filter
+  { $set: { age: 30 } } // update
+)
+```
+
+Expected Output:
+
+```sh
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 3,
+  modifiedCount: 3,
+  upsertedCount: 0
+}
+```
+
+## Delete a Document
+
+### deleteOne Method
+
+The `deleteOne` method in MongoDB is used to delete a single document that matches the specified filter criteria. If multiple documents match the filter, only the first matching document will be deleted.
+
+Syntax:
+
+```javascript
+db.collection.deleteOne(filter, options)
+```
+
+- **filter:** Specifies the selection criteria for the document to delete.
+- **options:** Optional. Additional options for the delete operation.
+
+Example:
+
+```javascript
+users> db.userData.deleteOne({ name: "Alice Smith" })
+```
+
+Expected Output:
+
+```sh
+{
+  acknowledged: true,
+  deletedCount: 1
+}
+```
+
+***Check if document successfully deleted from collection***
+
+```javascript
+users> db.userData.find()
+```
+
+Expected Output:
+
+```sh
+[
+    {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+    name: 'Jane Doe',
+    age: 20,
+    email: 'jane.doe@example.com',
+    city: 'New York'
+  },
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfb'),
+    name: 'Bob Johnson',
+    age: 20,
+    email: 'bob.johnson@example.com',
+    city: 'New York'
+  },
+]
+```
+
+***Suppose you want to delete a document `name : 'Jane Doe'` from the collection with mismatch filter criteria. lets see what happens***
+
+Example:
+
+```javascript
+users> db.userData.deleteOne({ name: "jane doe" }) // name in lower-case
+```
+
+Expected Output:
+
+```sh
+{
+  acknowledged: true,
+  deletedCount: 0
+}
+```
+
+- **acknowledged:** This field indicates whether the delete operation was acknowledged by the MongoDB server. A value of true means that the server has acknowledged the request.
+  
+- **deletedCount:** This field indicates the number of documents that were deleted as a result of the operation. A value of 0 means that no documents matched the filter criteria, so no documents were deleted.
+
+***Check whether the specified document has been deleted from the collection or not.***
+
+```javascript
+users> db.userData.find()
+```
+
+Expected Output:
+
+```sh
+[
+    {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+    name: 'Jane Doe',
+    age: 20,
+    email: 'jane.doe@example.com',
+    city: 'New York'
+  },
+  {
+    _id: ObjectId('66ea6dbbadd143d6bfc73bfb'),
+    name: 'Bob Johnson',
+    age: 20,
+    email: 'bob.johnson@example.com',
+    city: 'New York'
+  },
+]
+```
+
+Document with field `name : 'Jane Doe'` still exists in the collection!
+
+### deleteMany Method
+
+The `deleteMany` method in MongoDB is used to delete multiple documents that match the specified filter criteria.
+
+Syntax:
+
+```javascript
+db.collection.deleteMany(filter, options)
+```
+
+- **filter:** Specifies the selection criteria for the document to delete.
+- **options:** Optional. Additional options for the delete operation.
+
+Example:
+To delete all documents where the city is `"New York"`:
+
+```javascript
+users> db.userData.deleteMany({ city: "New York" })
+```
+
+Expected Output:
+
+```sh
+{
+  acknowledged: true,
+  deletedCount: 3
+}
+```
+
+***Check whether all the documents with field `city : 'New York'` has been deleted from the collection or not.***
+
+```javascript
+users> db.userData.find()
+```
+
+Expected Output:
+
+```sh
+you'll see nothing in output.
+```
+
+## Embedded Documents and Arrays
+
+Embedded documents in MongoDB are a way to store related data within a single document structure. This is useful for representing complex data relationships and can improve read performance by reducing the need for joins or multiple queries.
+
+**Key Points:**
+
+- **Structure:** Embedded documents are nested within a parent document.
+
+- **Atomicity:**  Updates to a single document, including its embedded documents, are atomic.
+
+- **Schema Design:** Useful for one-to-many relationships where the "many" side is not too large.
+
+**Benefits:**
+
+- **Performance:** Faster read operations since related data is stored together.
+  
+- **Atomic Updates:** Changes to the document, including embedded documents, are atomic.
+
+- **Simplified Queries:**  Easier to query related data without needing joins.
+
+**Considerations:**
+
+- **Document Size:** MongoDB documents have a size limit of 16MB.
+
+- **Data Duplication:**  Embedding can lead to data duplication if not designed carefully.
+
+### Embedded Document
+
+An embedded document in MongoDB is a document that is nested within another document. This is useful for representing complex data structures.
+
+Example:
+
+Consider a `userData` collection where each `user` has a profile embedded within the `user` document.
+
+```javascript
+users> db.userData.updateMany({} ,
+ {$set : {profile :{city : 'Somewhere in the world' , pet :'cats'}}})
+```
+
+Expected Output:
+
+```sh
+[
+  {
+    _id: ObjectId('66eaf00854470240e2c73bff'),
+    name: 'Jane Doe',
+    age: 25,
+    email: 'jane.doe@example.com',
+    profile: {
+      city: 'Somewhere in the world',
+      pet : 'cat'
+    }
+  },
+  {
+    _id: ObjectId('66eaf00854470240e2c73c00'),
+    name: 'Alice Smith',
+    age: 28,
+    email: 'alice.smith@example.com',
+    profile: {
+      city: 'Somewhere in the world',
+      pet : 'cat'
+    }
+  },
+  {
+    _id: ObjectId('66eaf00854470240e2c73c01'),
+    name: 'Bob Johnson',
+    age: 35,
+    email: 'bob.johnson@example.com',
+    profile: {
+      city: 'Somewhere in the world',
+      pet : 'cat'
+    }
+  }
+]
+```
+
+### Arrays of Data
+
+Arrays in MongoDB are used to store multiple values in a single field. This is useful for representing lists of related data.
+
+Example:
+
+Consider a `userData` collection where each user has multiple addresses stored in an array.
+
+```javascript
+users> db.userData.insertOne({name : 'John Doe' , age : 27 , 
+       email : 'johndoe@mail.com' , 
+       addresses: 
+       [
+         {
+           street: "123 Main St",
+           city: "New York",
+           state: "NY",
+           zip: "10001"
+         },
+         {
+          street: "456 Elm St",
+          city: "Boston"
+          state: "MA",
+          zip: "02110"
+         }
+       ]
+})
+```
+
+Expected Output:
+
+```sh
+ {
+    _id: ObjectId('66eb1a25654ecb3e79c73c22'),
+    name: 'John Doe',
+    age: 27,
+    email: 'johndoe@mail.com',
+    addresses: [
+      {
+        street: '123 Main St',
+        city: 'New York',
+        state: 'NY',
+        zip: '10001'
+      },
+      {
+        street: '456 Elm St',
+        city: 'Boston',
+        state: 'MA',
+        zip: '02110'
+      }
+    ]
+  }
+```
+
+Summary:
+
+- **Embedded Document:** A single nested document within a parent document.
+- **Array of Data:** A field that contains multiple values, each of which can be a simple value or a complex document.

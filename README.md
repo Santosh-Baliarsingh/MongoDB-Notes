@@ -52,6 +52,15 @@
   - [Embedded Documents and Arrays](#embedded-documents-and-arrays)
     - [Embedded Document](#embedded-document)
     - [Arrays of Data](#arrays-of-data)
+  - [Accessing Structured Data](#accessing-structured-data)
+    - [Query Objects](#query-objects)
+    - [Query Arrays](#query-arrays)
+    - [Query Array of Objects](#query-array-of-objects)
+  - [Resetting Database](#resetting-database)
+    - [Delete a Database](#delete-a-database)
+    - [Delete a Collection](#delete-a-collection)
+    - [Delete a Specific Document](#delete-a-specific-document)
+    - [Delete all Documents](#delete-all-documents)
 
 ## What is MongoDB?
 
@@ -1448,3 +1457,266 @@ Summary:
 
 - **Embedded Document:** A single nested document within a parent document.
 - **Array of Data:** A field that contains multiple values, each of which can be a simple value or a complex document.
+
+## Accessing Structured Data
+
+### Query Objects
+
+**If document looks like this** 👇🏻
+
+```javascript
+[
+  {
+    _id: ObjectId('66eaf00854470240e2c73bff'),
+    name: 'Jane Doe',
+    age: 25,
+    email: 'jane.doe@example.com',
+    profile: {
+      city: 'Somewhere in the world',
+      pet : 'cat'
+    }
+  },
+  {
+    _id: ObjectId('66eaf00854470240e2c73c00'),
+    name: 'Alice Smith',
+    age: 28,
+    email: 'alice.smith@example.com',
+    profile: {
+      city: 'Somewhere in the world',
+      pet : 'dog'
+    }
+  },
+  {
+    _id: ObjectId('66eaf00854470240e2c73c01'),
+    name: 'Bob Johnson',
+    age: 35,
+    email: 'bob.johnson@example.com',
+    profile: {
+      city: 'Somewhere in the world',
+      pet : 'tiger'
+    }
+  }
+]
+```
+
+***We should use the following command:***
+
+```javascript
+db.collection.find({ // replace 'collection' with the name of your collection
+  'profile.pet': 'cat'
+})
+```
+
+***Note:*** when you are using `.` notation make sure to wrap the entire term with quotation mark.
+
+Expected Output:
+
+```sh
+{
+    _id: ObjectId('66eaf00854470240e2c73bff'),
+    name: 'Jane Doe',
+    age: 25,
+    email: 'jane.doe@example.com',
+    profile: {
+      city: 'Somewhere in the world',
+      pet : 'cat'
+    }
+  }
+```
+
+### Query Arrays
+
+**If document looks like this:** 👇🏻
+
+```javascript
+[
+  {
+    _id: ObjectId('66eaf00854470240e2c73bff'),
+    name: 'Jane Doe',
+    age: 25,
+    email: 'jane.doe@example.com',
+    hobbies: ["Sports" , "Cooking" , "Reading"]
+  },
+  {
+    _id: ObjectId('66eaf00854470240e2c73c00'),
+    name: 'Alice Smith',
+    age: 28,
+    email: 'alice.smith@example.com',
+    hobbies: ["Reading" , "Coding" , "Dancing"]
+  },
+  {
+    _id: ObjectId('66eaf00854470240e2c73c01'),
+    name: 'Bob Johnson',
+    age: 35,
+    email: 'bob.johnson@example.com',
+    hobbies: ["Sports" , "Painting" , "Dancing"]
+  },
+]
+```
+
+***We should use the following command:***
+
+```javascript
+db.collection.find({ // replace 'collection' with the name of your collection
+  hobbies: "Sports"
+})
+```
+
+Expected Output:
+
+```sh
+{
+    _id: ObjectId('66eaf00854470240e2c73bff'),
+    name: 'Jane Doe',
+    age: 25,
+    email: 'jane.doe@example.com',
+    hobbies: ["Sports" , "Cooking" , "Reading"]
+  },
+   {
+    _id: ObjectId('66eaf00854470240e2c73c01'),
+    name: 'Bob Johnson',
+    age: 35,
+    email: 'bob.johnson@example.com',
+    hobbies: ["Sports" , "Painting" , "Dancing"]
+  },
+```
+
+### Query Array of Objects
+
+**If document looks like this:** 👇🏻
+
+```javascript
+[
+ {
+    _id: ObjectId('66eb1a25654ecb3e79c73c22'),
+    name: 'John Doe',
+    age: 27,
+    email: 'johndoe@mail.com',
+    addresses: [
+      {
+        street: '123 Main St',
+        city: 'New York',
+        state: 'NY',
+        zip: '10001'
+      }
+    ]
+  },
+ {
+    _id: ObjectId('68eb1a25654ecb3e79c73c29'),
+    name: 'Jane Doe',
+    age: 20,
+    email: 'janedoe@mail.com',
+    addresses: [
+      {
+        street: '456 Elm St',
+        city: 'Boston',
+        state: 'MA',
+        zip: '02110'
+      }
+    ]
+  }
+]  
+```
+
+***We should use the following command:***
+
+```javascript
+db.collection.find({ //  // replace 'collection' with the name of your collection
+  addresses: {
+    $elemMatch: {
+      street: '456 Elm St'
+    }
+  }
+})
+```
+
+***Note:*** The `$elemMatch` operator in MongoDB is used to match documents that contain an array field with at least one element that matches all the specified query criteria. It is particularly useful when you need to query nested arrays or when you need to apply multiple conditions to elements within an array.
+
+Explanation:
+
+- **addresses:** Specifies the array field to search within.
+
+- **$elemMatch:** Ensures that at least one element in the `addresses` array matches the specified criteria.
+
+- **{ street: '456 Elm St' }:** The criteria that the element in the array must match.
+
+Expected Output:
+
+```sh
+{
+    _id: ObjectId('68eb1a25654ecb3e79c73c29'),
+    name: 'Jane Doe',
+    age: 20,
+    email: 'janedoe@mail.com',
+    addresses: [
+      {
+        street: '456 Elm St',
+        city: 'Boston',
+        state: 'MA',
+        zip: '02110'
+      }
+    ]
+  }
+```
+
+## Resetting Database
+
+***Check all database:***
+
+```javascript
+test> show dbs
+```
+
+### Delete a Database
+
+```javascript
+use your_database_name // switch to desired database replace your_database_name
+db.dropDatabase()
+```
+
+Expected Output:
+
+```sh
+{ ok: 1, dropped: 'your_database_name' }
+```
+
+### Delete a Collection
+
+```javascript
+use your_database_name //  replace your_database_name
+db.your_collection_name.drop() // replace your_collection_name
+```
+
+Expected Output:
+
+```sh
+true
+```
+
+### Delete a Specific Document
+
+```javascript
+use your_database_name //  replace your_database_name
+db.your_collection_name.deleteOne({ your_query }) // replace your_collection_name
+```
+
+Expected Output:
+
+```sh
+{ acknowledged: true, deletedCount: 1 }
+```
+
+### Delete all Documents
+
+Suppose you have 5 documents are there in a collection
+
+```javascript
+use your_database_name
+db.your_collection_name.deleteMany({})
+```
+
+Expected Output:
+
+```sh
+{ acknowledged: true, deletedCount: 5 }
+```

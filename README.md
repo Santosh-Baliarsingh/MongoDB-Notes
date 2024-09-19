@@ -1670,7 +1670,7 @@ test> show dbs
 ### Delete a Database
 
 ```javascript
-use your_database_name // switch to desired database replace your_database_name
+use your_database_name // switch to desired database replace your_database_name with actual database name
 db.dropDatabase()
 ```
 
@@ -1680,11 +1680,39 @@ Expected Output:
 { ok: 1, dropped: 'your_database_name' }
 ```
 
+***Check if a database has a collection or not:***
+
+```javascript
+use your_database_name // replace your_database_name with actual database name
+db.getCollectionNames()
+```
+
+Expected Output:
+
+```sh
+['userData']
+```
+
+***Check if a database has a specific collection or not:***
+
+```javascript
+use your_database_name // replace your_database_name with actual database name
+db.getCollectionNames().include('your_collection_name') // replace your_collection_name with actual collection name
+```
+
+Expected Output:
+
+```sh
+true
+```
+
+***Note:***  `true` if the collection exists and `false` if it does not.
+
 ### Delete a Collection
 
 ```javascript
-use your_database_name //  replace your_database_name
-db.your_collection_name.drop() // replace your_collection_name
+use your_database_name //  replace your_database_name with actual database name
+db.your_collection_name.drop() // replace your_collection_name with actual collection name
 ```
 
 Expected Output:
@@ -1696,8 +1724,8 @@ true
 ### Delete a Specific Document
 
 ```javascript
-use your_database_name //  replace your_database_name
-db.your_collection_name.deleteOne({ your_query }) // replace your_collection_name
+use your_database_name //  replace your_database_name with actual database name
+db.your_collection_name.deleteOne({ your_query }) // replace your_collection_name with actual collection name
 ```
 
 Expected Output:
@@ -1711,8 +1739,8 @@ Expected Output:
 Suppose you have 5 documents are there in a collection
 
 ```javascript
-use your_database_name
-db.your_collection_name.deleteMany({})
+use your_database_name // //  replace your_database_name with actual database name
+db.your_collection_name.deleteMany({}) // // replace your_collection_name with actual collection name
 ```
 
 Expected Output:

@@ -29,7 +29,7 @@
     - [Example](#example)
   - [Differences Between JSON and BSON Format](#differences-between-json-and-bson-format)
   - [Default Storage Engines Used by Different Databases](#default-storage-engines-used-by-different-databases)
-  - [Creating Database and Collection](#creating-database-and-collection)
+  - [1. Creating Database and Collection](#1-creating-database-and-collection)
     - [Show All Databases](#show-all-databases)
     - [Create Database](#create-database)
     - [Create a Collection](#create-a-collection)
@@ -73,6 +73,11 @@
     - [One-to-Many Relationship - Referencing](#one-to-many-relationship---referencing)
     - [Many-to-Many Relationship - Embedding](#many-to-many-relationship---embedding)
     - [Many-to-Many Relationship - Referencing](#many-to-many-relationship---referencing)
+  - [Schema Validation](#schema-validation)
+    - [Define a Schema](#define-a-schema)
+    - [Create the Collection with Validation](#create-the-collection-with-validation)
+    - [Insert Document](#insert-document)
+    - [Handle Validation Errors](#handle-validation-errors)
 
 ## What is MongoDB?
 
@@ -360,7 +365,7 @@ Understanding these core concepts is essential for working effectively with Mong
 | Microsoft SQL Server | SQL Server's own storage engine             |
 | Oracle Database      | Oracle's own storage engine                 |
 
-## Creating Database and Collection
+## 1. Creating Database and Collection
 
 ### Show All Databases
 
@@ -1371,7 +1376,7 @@ Consider a `userData` collection where each `user` has a profile embedded within
 
 ```javascript
 users> db.userData.updateMany({} ,
- {$set : {profile :{city : 'Somewhere in the world' , pet :'cats'}}})
+ {$set : {profile :{city : 'Somewhere in the world' , pet :'cat'}}})
 ```
 
 Expected Output:
@@ -1751,8 +1756,8 @@ Expected Output:
 Suppose you have 5 documents are there in a collection
 
 ```javascript
-use your_database_name //  replace your_database_name with actual database name
-db.your_collection_name.deleteMany({}) // replace your_collection_name with actual collection name
+use your_database_name  //  replace your_database_name with actual database name
+db.your_collection_name.deleteMany({})  // replace your_collection_name with actual collection name
 ```
 
 Expected Output:
@@ -2186,3 +2191,172 @@ In MongoDB, relationships between data can be represented in two main ways: `emb
 - **Embedding:** is generally not recommended for many-to-many relationships due to complexity and potential document size issues.
   
 - **Referencing:** with a linking collection is better for managing many-to-many relationships, providing flexibility, normalization, and scalability.
+
+## Schema Validation
+
+`Schema validation` in MongoDB ensures that the data inserted into a collection adheres to a specific structure. This is useful for maintaining data integrity and consistency.
+
+***Example:***
+
+### Define a Schema
+
+The schema for a note might include fields like `title`, `content`, `created_at`, and `tags`.
+
+### Create the Collection with Validation
+
+```javascript
+db.createCollection("notes", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["title", "content", "created_at"],
+      properties: {
+        title: {
+          bsonType: "string",
+          description: "must be a string and is required"
+        },
+        content: {
+          bsonType: "string",
+          description: "must be a string and is required"
+        },
+        created_at: {
+          bsonType: "date",
+          description: "must be a date and is required"
+        },
+        tags: {
+          bsonType: "array",
+          items: {
+            bsonType: "string"
+          },
+          description: "must be an array of strings"
+        }
+      }
+    }
+  }
+});
+```
+
+Expected Output:
+
+```sh
+{ ok: 1 }
+```
+
+### Insert Document
+
+```javascript
+db.notes.insertOne({
+  title: "Meeting Notes",
+  content: "Discuss project milestones and deadlines.",
+  created_at: new Date(),
+  tags: ["meeting", "project"]
+});
+```
+
+Expected Output:
+
+```sh
+[
+  {
+    _id: ObjectId('66ed9b02f10872978ec73bfd'),
+    title: 'Meeting Notes',
+    content: 'Discuss project milestones and deadlines.',
+    created_at: ISODate('2024-09-20T15:55:46.385Z'),
+    tags: [ 'meeting', 'project' ]
+  }
+]
+```
+
+### Handle Validation Errors
+
+If you try to insert a document that does not conform to the schema, MongoDB will throw a validation error.
+
+For example, if you try to insert a document with a `title` field that is a `number` instead of a `string`, the operation will fail.
+
+```javascript
+db.notes.insertOne({
+  title: 12345,  // Invalid type
+  content: "Discuss project milestones and deadlines.",
+  created_at: new Date(),
+  tags: ["meeting", "project"]
+});
+```
+
+Expected Output:
+
+```javascript
+Uncaught:
+MongoServerError: Document failed validation
+Additional information: {
+  failingDocumentId: ObjectId('66ed9b44f10872978ec73bfe'),
+  details: {
+    operatorName: '$jsonSchema',
+    schemaRulesNotSatisfied: [
+      {
+        operatorName: 'properties',
+        propertiesNotSatisfied: [
+          {
+            propertyName: 'title',
+            description: 'must be a string and is required',
+            details: [
+              {
+                operatorName: 'bsonType',
+                specifiedAs: { bsonType: 'string' },
+                reason: 'type did not match',
+                consideredValue: 12345,
+                consideredType: 'int'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+***Error Breakdown:***
+
+1. **Error Type:** `MongoServerError`
+   - **This indicates that the error occurred on the MongoDB server.**
+
+2. **Error Message:** `Document failed validation`
+   - **This means that the document did not meet the schema validation rules defined for the collection.**
+
+3. **Additional Information:**
+   - **failingDocumentId:** `ObjectId('66ed9b44f10872978ec73bfe')`
+     - **This is the unique identifier of the document that failed validation.**
+   - **details:**
+     - **operatorName:** `$jsonSchema`
+       - **Indicates that the validation was performed using a JSON schema.**
+     - **schemaRulesNotSatisfied:**
+       - **An array of rules that the document did not satisfy.**
+
+4. **Schema Rules Not Satisfied:**
+   - **operatorName:** `properties`
+     - **Indicates that the validation failed at the properties level.**
+   - **propertiesNotSatisfied:**
+     - **An array of properties that did not meet the validation criteria.**
+
+5. **Property Details:**
+   - **propertyName:** `title`
+     - **The name of the property that failed validation.**
+   - **description:** `must be a string and is required`
+     - **The validation rule that the `title` property must be a string and is required.**
+   - **details:**
+     - **operatorName:** `bsonType`
+       - **Indicates that the validation rule is based on BSON type.**
+     - **specifiedAs:** `{ bsonType: 'string' }`
+       - **The expected BSON type for the `title` property is a string.**
+     - **reason:** `type did not match`
+       - **The reason for the validation failure is that the type did not match the expected type.**
+     - **consideredValue:** `12345`
+       - **The value that was considered for the `title` property.**
+     - **consideredType:** `int`
+       - **The actual type of the considered value, which is an integer.**
+
+***Resources for More Details:***
+
+- **The MongoDB Limits:** [https://docs.mongodb.com/manual/reference/limits/](https://docs.mongodb.com/manual/reference/limits/)
+- **The MongoDB Data Types:** [https://docs.mongodb.com/manual/reference/bson-types/](https://docs.mongodb.com/manual/reference/bson-types/)
+- **More on Schema Validation:** [https://docs.mongodb.com/manual/core/schema-validation/](https://docs.mongodb.com/manual/core/schema-validation/)

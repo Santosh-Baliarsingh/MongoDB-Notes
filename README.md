@@ -61,6 +61,11 @@
     - [Delete a Collection](#delete-a-collection)
     - [Delete a Specific Document](#delete-a-specific-document)
     - [Delete all Documents](#delete-all-documents)
+    - [Statistics about the Database](#statistics-about-the-database)
+  - [2. Schemas and Relations](#2-schemas-and-relations)
+    - [Why do we use Schemas?](#why-do-we-use-schemas)
+    - [Structuring Documents](#structuring-documents)
+    - [Data Types](#data-types)
 
 ## What is MongoDB?
 
@@ -1748,3 +1753,210 @@ Expected Output:
 ```sh
 { acknowledged: true, deletedCount: 5 }
 ```
+
+### Statistics about the Database
+
+The `db.stats()` command in MongoDB provides statistics about the database. It returns an overview of the database's storage and usage, including information such as the number of collections, the size of the data, the storage size, and more.
+
+Example:
+
+```javascript
+db.stats()
+```
+
+Expected Output:
+
+```javascript
+{
+  "db": "myDatabase",
+  "collections": 5,
+  "views": 0,
+  "objects": 1000,
+  "avgObjSize": 45.6,
+  "dataSize": 45600,
+  "storageSize": 81920,
+  "numExtents": 0,
+  "indexes": 10,
+  "indexSize": 16384,
+  "scaleFactor": 1,
+  "fsUsedSize": 104857600,
+  "fsTotalSize": 2147483648,
+  "ok": 1
+}
+```
+
+***Key Fields:***
+
+- **db:** The name of the database.
+- **collections:** The number of collections in the database.
+- **views:** The number of views in the database.
+- **object:** The number of documents in the database.
+- **avgObjSize:** The average size of each document.
+- **dataSize:** The total size of the data in the database.
+- **storageSize:** The total amount of storage allocated for the database.
+- **indexes:** The number of indexes in the database.
+- **indexSize:** The total size of all indexes.
+- **fsUsedSize:** The amount of filesystem space used by the database.
+- **fsTotalSize:** The total amount of filesystem space available.
+- **ok:**  Indicates if the command was successful (1 for success).
+
+## 2. Schemas and Relations
+
+### Why do we use Schemas?
+
+Using `schemas` helps maintain a consistent and reliable data structure, making your application more robust and easier to manage.
+
+### Structuring Documents
+
+1. **Use Schemas (Even in a Schema-less Database)**
+   - **Consistency**: Use libraries like Mongoose to define schemas at the application level, ensuring consistent data structure.
+   - **Validation**: Enforce data types, required fields, and constraints to maintain data integrity.
+
+2. **Embed Data When Appropriate**
+   - **Related Data**: Embed related data within a single document if it is frequently accessed together. This can improve read performance.
+   - **Example**: Store user profile information and their addresses in the same document.
+
+3. **Reference Data When Necessary**
+   - **Normalization**: Use references for data that is accessed independently or has a many-to-many relationship. This helps avoid data duplication.
+   - **Example**: Store user IDs in an orders collection to reference user details stored in a separate users collection.
+
+4. **Optimize for Read and Write Patterns**
+   - **Access Patterns**: Design your schema based on how your application reads and writes data. Optimize for the most common queries.
+   - **Example**: If you frequently need to access user posts, consider embedding posts within the user document.
+
+5. **Use Indexes**
+   - **Performance**: Create indexes on fields that are frequently queried to improve read performance.
+   - **Example**: Index the `email` field in a users collection to speed up user lookups by email.
+
+6. **Avoid Deeply Nested Documents**
+   - **Complexity**: Limit the depth of nested documents to avoid complexity and performance issues.
+   - **Example**: Instead of deeply nesting comments within posts, consider a separate comments collection with references to post IDs.
+
+7. **Consider Document Size**
+   - **Limits**: Be aware of MongoDB's document size limit (16MB). Design your schema to avoid exceeding this limit.
+   - **Example**: For large datasets, consider splitting data into multiple documents or collections.
+  
+8. **Use Appropriate Data Types**
+   - **Efficiency**: Use the most appropriate data types for your fields to optimize storage and performance.
+   - **Example**: Use `Date` for timestamps, `Number` for numerical values, and `String` for text.
+  
+```javascript
+ {
+    name: "Jane Doe",
+    email: "jane.doe@example.com",
+    age: 25,
+    createdAt: new Date()
+  },
+  {
+    name: "Alice Smith",
+    email: "alice.smith@example.com",
+    age: 28,
+    createdAt: new Date()
+  }
+```
+
+### Data Types
+
+MongoDB supports various data types, including:
+
+1. **String:** Used to store text data. Strings must be UTF-8 valid.
+
+   ```javascript
+    { "name": "John Doe" }
+   ```
+
+2. **Integer:** Used to store numerical values. MongoDB provides both 32-bit and 64-bit integers.
+
+   ```javascript
+   { "age": 30 }
+   ```  
+
+3. **Boolean:** Used to store a boolean (true/false) value.
+
+   ```javascript
+   { "age": 30 }
+   ```  
+
+4. **Double:** Used to store floating-point values.
+
+   ```javascript
+   { "height": 5.9 }
+   ```
+
+5. **Min/Max Keys:** Used to compare a value against the lowest and highest BSON elements.
+
+   ```javascript
+   { "minKey": { "$minKey": 1 }, "maxKey": { "$maxKey": 1 } }
+   ```
+
+6. **Arrays:** Used to store arrays or lists of values.
+
+   ```javascript
+   { "tags": ["mongodb", "database", "NoSQL"] }
+   ```
+
+7. **Timestamp:** Used to store a specific point in time.
+
+   ```javascript
+   { "createdAt": { "$timestamp": { "t": 1627847267, "i": 1 } } }
+   ```
+
+8. **Object:** Used to store embedded documents.
+
+   ```javascript
+   { "address": { "street": "123 Main St", "city": "Anytown" } }
+   ```
+
+9. **Null:** Used to store a null value.
+
+   ```javascript
+   { "middleName": null }
+   ```
+
+10. **Symbol:** Generally used for languages that support a specific symbol type.
+
+    ```javascript
+    { "symbol": { "$symbol": "symbolValue" } }
+    ```
+
+11. **Date:** Used to store the current date or time in UNIX time format.
+
+    ```javascript
+    { "birthdate": { "$date": "1990-01-01T00:00:00Z" } }
+    ```
+
+12. **Object ID:** Used to store the document’s ID.
+
+    ```javascript
+    { "_id": { "$oid": "507f1f77bcf86cd799439011" } }
+    ```
+
+13. **Binary Data:** Used to store binary data.
+
+    ```javascript
+    { "binaryData": { "$binary": { "base64": "aGVsbG8gd29ybGQ=", "subType": "00" } } }
+    ```
+
+14. **Code:** Used to store JavaScript code for execution on the server.
+
+    ```javascript
+    { "code": { "$code": "function() { return 'Hello, world!'; }" } }
+    ```
+
+15. **Regular Expression:** Used to store regular expressions.
+  
+    ```javascript
+    { "regex": { "$regex": "pattern", "$options": "i" } }
+    ```
+
+16. **Decimal128:** Used to store high-precision decimal values.
+  
+    ```javascript
+    { "decimalValue": { "$numberDecimal": "9.99" } }
+    ```
+
+17. **JavaScript (with scope):** Used to store JavaScript code that includes a scope.
+  
+    ```javascript
+    { "codeWithScope": { "$code": "function() { return x; }", "$scope": { "x": 1 } } }
+    ```

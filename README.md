@@ -48,6 +48,9 @@
     - [findOne Method with Query](#findone-method-with-query)
     - [findOne Method with Projection](#findone-method-with-projection)
     - [find Method and Cursor Object](#find-method-and-cursor-object)
+    - [MongoDB Query Selectors](#mongodb-query-selectors)
+    - [Projection Operators](#projection-operators)
+    - [MongoDB Cursor Methods](#mongodb-cursor-methods)
   - [Update a Document](#update-a-document)
     - [updateOne Method](#updateone-method)
     - [updateMany Method](#updatemany-method)
@@ -1351,6 +1354,400 @@ Expected Output:
 - ***Note:*** Cursor is generally more efficient and flexible, especially when dealing with large datasets. It allows for better memory management, lazy evaluation, and more control over the query execution process.
 
 - Cursors provide methods to control the execution of the query, such as sort(), limit(), and skip(), allowing for more flexible and efficient data retrieval.
+  
+### MongoDB Query Selectors
+
+***Comparison Operators:***
+
+1. `$eq` (Equal): Matches values that are equal to a specified value.
+
+   ```javascript
+   { "age": { "$eq": 25 } }
+   ```
+
+   This query selects all documents where the `age` field is equal to 25.
+
+2. `$ne` (Not Equal): Matches all values that are not equal to a specified value.
+
+   ```javascript
+   { "age": { "$ne": 25 } }
+   ```
+
+   This query selects all documents where the `age` field is not equal to 25.
+
+3. `$gt` (Greater Than): Matches values that are greater than a specified value.
+
+   ```javascript
+   { "age": { "$gt": 25 } }
+   ```
+
+   This query selects all documents where the `age` field is greater than 25.
+
+4. `$gte` (Greater Than or Equal): Matches values that are greater than or equal to a specified value.
+
+   ```javascript
+   { "age": { "$gte": 25 } }
+   ```
+
+   This query selects all documents where the `age` field is greater than or equal to 25.
+
+5. `$lt` (Less Than): Matches values that are less than a specified value.
+
+   ```javascript
+   { "age": { "$lt": 25 } }
+   ```
+
+   This query selects all documents where the `age` field is less than 25.
+
+6. `$lte` (Less Than or Equal): Matches values that are less than or equal to a specified value.
+
+   ```javascript
+   { "age": { "$lte": 25 } }
+   ```
+
+   This query selects all documents where the `age` field is less than or equal to 25.
+
+***Logical Operators:***
+
+1. `$and`: Joins query clauses with a logical AND returns all documents that match the conditions of both clauses.
+
+   ```javascript
+   { "$and": [ { "age": { "$gt": 25 } }, { "age": { "$lt": 50 } } ] }
+   ```
+
+   This query selects all documents where the `age` field is greater than 25 and less than 50.
+
+2. `$or`: Joins query clauses with a logical OR returns all documents that match the conditions of either clause.
+
+   ```javascript
+   { "$or": [ { "age": { "$lt": 20 } }, { "age": { "$gt": 50 } } ] }
+   ```
+
+   This query selects all documents where the `age` field is either less than 20 or greater than 50.
+
+3. `$not`: Inverts the effect of a query expression and returns documents that do not match the query expression.
+
+   ```javascript
+   { "age": { "$not": { "$gt": 25 } } }
+   ```
+
+   This query selects all documents where the `age` field is not greater than 25.
+
+***Element Operators***
+
+1. `$exists`: Matches documents that have the specified field.
+
+   ```javascript
+   { "nickname": { "$exists": true } }
+   ```
+
+   This query selects all documents that have the `nickname` field.
+
+2. `$type`: Selects documents if a field is of the specified type.
+
+   ```javascript
+   { "age": { "$type": "int" } }
+   ```
+
+  This query selects all documents where the `age` field is of type integer.
+
+***Evaluation Operators:***
+
+1. `$regex`: Selects documents where values match a specified regular expression.
+
+   ```javascript
+   { "name": { "$regex": "^A" } }
+   ```
+
+   This query selects all documents where the `name` field starts with the letter "A".
+
+2. `$mod`: Performs a modulo operation on the value of a field and selects documents with a specified result.
+
+   ```javascript
+   { "age": { "$mod": [4, 0] } }
+   ```
+
+   This query selects all documents where the `age` field divided by 4 has a remainder of 0.
+
+3. `$text`: Performs text search.
+
+   ```javascript
+   { "$text": { "$search": "coffee" } }
+   ```
+
+   This query selects all documents that contain the `word` "coffee".
+
+4. `$where`: Matches documents that satisfy a JavaScript expression.
+
+   ```javascript
+   { "$where": "this.age > 25" }
+   ```
+
+   This query selects all documents where the `age` field is greater than 25.
+
+***Array Operators:***
+
+1. `$in`: Matches any of the values specified in an array.
+
+   ```javascript
+   { "age": { "$in": [20, 25, 30] } }
+   ```
+
+   This query selects all documents where the `age` field is either 20, 25, or 30.
+
+2. `$nin`: Matches none of the values specified in an array.
+
+   ```javascript
+   { "age": { "$nin": [20, 25, 30] } }
+   ```
+
+   This query selects all documents where the `age` field is not 20, 25, or 30.
+
+3. `$all`: Matches arrays that contain all elements specified in the query.
+
+   ```javascript
+   { "tags": { "$all": ["red", "blue"] } }
+   ```
+
+   This query selects all documents where the `tags` array contains both "red" and "blue".
+
+4. `$size`: Selects documents if the array field is of the specified size.
+
+   ```javascript
+   { "tags": { "$size": 3 } }
+   ```
+
+   This query selects all documents where the `tags` array has 3 elements.
+
+5. `$elemMatch`: Matches documents that contain an array field with at least one element that matches all the specified query criteria.
+
+   ```javascript
+   { "results": { "$elemMatch": { "product": "xyz", "score": { "$gte": 8 } } } }
+   ```
+
+   This query selects all documents where the `results` array contains an element with product equal to "xyz" and score greater than or equal to 8.
+
+### Projection Operators
+
+1. `$`: Projects the first element in an array that matches the query condition.
+
+   ```javascript
+   db.collection.find(
+     { "grades": { "$elemMatch": { "score": { "$gt": 80 } } } },
+     { "grades.$": 1 }
+   )
+   ```
+
+   This query returns the first element in the `grades` array that has a `score` greater than 80.
+
+2. `$elemMatch`: Projects the first element in an array that matches the specified `$elemMatch` condition.
+
+   ```javascript
+   db.collection.find(
+     { "grades": { "$elemMatch": { "score": { "$gt": 80 } } } },
+     { "grades": { "$elemMatch": { "score": { "$gt": 80 } } } }
+   )
+   ```
+
+   This query returns the first element in the `grades` array that has a `score` greater than 80.
+
+3. `$meta`: Projects the document's score assigned by the `$meta` textScore.
+
+   ```javascript
+   db.collection.find(
+     { "$text": { "$search": "coffee" } },
+     { "score": { "$meta": "textScore" } }
+   )
+   ```
+
+   This query returns documents that match the text search for "coffee" and includes a `score` field with the text search score.
+
+4. `$slice`: Limits the number of elements projected from an array. Supports both positive and negative values.
+
+   ```javascript
+   db.collection.find(
+     {},
+     { "comments": { "$slice": 5 } }
+   )
+   ```
+
+   This query returns the first 5 elements in the `comments` array.
+
+### MongoDB Cursor Methods
+
+1. `find()`: Initiates a query and returns a cursor to the documents that match the query.
+
+   ```javascript
+   db.users.find({ isActive: true });
+   ```
+
+   ***Explanation:*** Finds all documents where isActive is true.
+
+2. `sort()`: Sorts the documents in the cursor.
+
+   ```javascript
+   db.users.find().sort({ age: 1 });
+   ```
+
+   ***Explanation:*** Sorts the documents by the age field in ascending order.
+
+3. `limit()`: Limits the number of documents returned by the cursor.
+
+   ```javascript
+   db.users.find().limit(5);
+   ```
+
+   ***Explanation:*** Limits the result to 5 documents.
+
+4. `skip()`: Skips a specified number of documents in the cursor.
+
+   ```javascript
+   db.users.find().skip(2);
+   ```
+
+   ***Explanation:*** Skips the first 2 documents in the result set.
+
+5. `count()`: Returns the count of documents that match the query.
+
+   ```javascript
+   db.users.find({ isActive: true }).count();
+   ```
+
+   ***Explanation:*** Counts the number of documents where isActive is true.
+
+6. `forEach()`: Iterates over the cursor and applies a function to each document.
+
+   ```javascript
+   db.users.find().forEach(function(doc) { printjson(doc); });
+   ```
+
+   ***Explanation:*** Prints each document in the result set in JSON format.
+
+7. `map()`: Applies a function to each document in the cursor and returns an array of the results.
+
+   ```javascript
+   db.users.find().map(function(doc) { return doc.name; });
+   ```
+
+   ***Explanation:*** Returns an array of the name field from each document.
+
+8. `toArray()`:Converts the cursor to an array.
+
+   ```javascript
+   db.users.find().toArray();
+   ```
+
+   ***Explanation:*** Explanation: Converts the result set to an array.
+
+9. `explain()`: Provides information on the query plan.
+
+   ```javascript
+   db.users.find({ isActive: true }).explain("executionStats");
+   ```
+
+   ***Explanation:*** Provides detailed information about how MongoDB executed the query.
+
+10. `projection()`: Specifies the fields to return in the documents.
+
+    ```javascript
+    db.users.find({}, { name: 1, age: 1 });
+    ```
+
+    ***Explanation:*** Returns only the name and age fields in the result set.
+
+11. `batchSize()`: Applies a function to each document in the cursor and returns an array of the results.
+
+    ```javascript
+    db.users.find().batchSize(100);
+    ```
+
+    ***Explanation:*** Sets the batch size to 100 documents.
+
+12. `maxTimeMS()`: Specifies a time limit for processing operations on a cursor.
+
+    ```javascript
+    db.users.find().maxTimeMS(5000);
+    ```
+
+    ***Explanation:***  Limits the query execution time to 5000 milliseconds (5 seconds).
+
+13. `hasNext()`: Returns true if the cursor has more documents.
+
+    ```javascript
+    var cursor = db.users.find();
+    while (cursor.hasNext()) {
+    printjson(cursor.next());
+    }
+    ```
+
+    ***Explanation:***  Iterates over the cursor and prints each document if there are more documents.
+
+14. `next()`: Returns the next document in the cursor.
+
+    ```javascript
+    var cursor = db.users.find();
+    if (cursor.hasNext()) {
+    printjson(cursor.next());
+    }
+    ```
+
+    ***Explanation:*** Prints the next document in the cursor if it exists.
+
+15. `itcount()`: Returns the number of documents in the cursor.
+
+    ```javascript
+    db.users.find().itcount();
+    ```
+
+    ***Explanation:*** Counts the number of documents in the result set.
+
+16. `pretty()`: Formats the output of the cursor for readability.
+
+    ```javascript
+    db.users.find().pretty();
+    ```
+
+    ***Explanation:*** Formats the result set in a more readable JSON format.
+
+17. `max()`:Specifies an exclusive upper bound for a specific index in order to constrain the results of a query.
+
+    ```javascript
+    db.users.find().max({ age: 30 });
+    ```
+
+    ***Explanation:*** Limits the result set to documents where the age field is less than 30.
+
+18. `min()`: Specifies an inclusive lower bound for a specific index in order to constrain the results of a query.
+
+    ```javascript
+    db.users.find().min({ age: 20 });
+    ```
+
+    ***Explanation:***  Limits the result set to documents where the age field is greater than or equal to 20.
+
+19. `hint()`: Forces MongoDB to use a specific index for the query.
+
+    ```javascript
+    db.users.find({ age: { $gt: 25 } }).hint({ age: 1 });
+    ```
+
+    ***Explanation:***  Forces the query to use the index on the age field.
+
+20. `comment()`: Adds a comment to the query to help with profiling and debugging.
+
+    ```javascript
+    db.users.find({ isActive: true }).comment("Find active users");
+    ```
+
+    ***Explanation:***  Adds a comment to the query for easier identification in logs and profiling.
+
+***Resources for More Details:***
+
+For more detailed information, refer to the official MongoDB documentation:
+
+- **Find Method**: [find Method](https://docs.mongodb.com/manual/reference/method/db.collection.find/)
+- **Cursors**: [Iterate a Cursor](https://docs.mongodb.com/manual/tutorial/iterate-a-cursor/)
+- **Query Operator Reference**: [Query Operator Reference](https://docs.mongodb.com/manual/reference/operator/query/)
 
 ## Update a Document
 

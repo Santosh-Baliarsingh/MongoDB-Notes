@@ -36,6 +36,11 @@
   - [Create a Document](#create-a-document)
     - [insertOne Method](#insertone-method)
     - [insertMany Method](#insertmany-method)
+    - [Create a Document with Custom `_Id`](#create-a-document-with-custom-_id)
+    - [Ordered Inserts](#ordered-inserts)
+    - [Unordered inserts](#unordered-inserts)
+    - [Write Concern and Journaling in MongoDB](#write-concern-and-journaling-in-mongodb)
+    - [What is Atomictiy?](#what-is-atomictiy)
   - [Read a Document](#read-a-document)
     - [find Method](#find-method)
     - [find Method with Query](#find-method-with-query)
@@ -517,6 +522,323 @@ Expected Output:
   ]
 }
 ```
+
+### Create a Document with Custom `_Id`
+
+In MongoDB, you can specify your own `_id` value when inserting a document. If you do not provide an `_id`, MongoDB will automatically generate one for you.
+
+***Example:***
+
+Suppose you want to create a document of hobbies.
+
+```javascript
+db.hobbies.insertMany([
+  {
+    _id : 'sports',
+    name : 'Sports'
+  },
+  {
+    _id : 'cooking',
+    name : 'Cooking'
+  },
+  {
+    _id : 'reading',
+    name : 'Reading'
+  },
+])
+```
+
+***Expected Output:***
+
+```javascript
+{
+  acknowledged: true,
+  insertedIds: { '0': 'sports', '1': 'cooking', '2': 'reading' }
+}
+```
+
+***lets check the collection:***
+
+```javascript
+hobby> db.hobbies.find()
+
+[
+  { _id: 'sports', name: 'Sports' },
+  { _id: 'cooking', name: 'Cooking' },
+  { _id: 'reading', name: 'Reading' }
+]
+```
+
+***Note:*** Here we use `sports` as an `_id`  because we know that this will be unique, we will not have `sports` twice in this collection, so we can absolutely use sports as an `ID` here and the same  for `cooking` and `reading`.
+
+### Ordered Inserts
+
+If you try to insert a new document with an `_id` that already exists in the collection, MongoDB will throw a duplicate key error, and the insertion will fail. This is because the `_id` field must be unique for each document in a collection.
+
+***Example:**
+
+let add some new hobbies:
+
+```javascript
+db.hobbies.insertMany([
+  {
+    _id : 'coding',
+    name : 'Coding'
+  },
+  {
+    _id : 'cooking', // already exists in the document
+    name : 'Cooking'
+  },
+  {
+    _id : 'singing',
+    name : 'Singing'
+  },
+])
+```
+
+***Expected Output:***
+
+```javascript
+Uncaught:
+MongoBulkWriteError: E11000 duplicate key error collection: hobby.hobbies index: _id_ dup key: { _id: "Cooking" }
+Result: BulkWriteResult {
+  insertedCount: 1,
+  matchedCount: 0,
+  modifiedCount: 0,
+  deletedCount: 0,
+  upsertedCount: 0,
+  upsertedIds: {},
+  insertedIds: { '0': 'Coding' }
+}
+Write Errors: [
+  WriteError {
+    err: {
+      index: 1,
+      code: 11000,
+      errmsg: 'E11000 duplicate key error collection: hobby.hobbies index: _id_ dup key: { _id: "Cooking" }',
+      errInfo: undefined,
+      op: { _id: 'Cooking', name: 'Cooking' }
+    }
+  }
+]
+```
+
+***lets check our hobbies collection:***
+
+```javascript
+db.hobbies.find()
+```
+
+***Expected Output:***
+
+```javascript
+[
+  { _id: 'Sports', name: 'Sports' },
+  { _id: 'Cooking', name: 'Cooking' },
+  { _id: 'Reading', name: 'Reading' },
+  { _id: 'Coding', name: 'Coding' } // new element Added 
+]
+```
+
+***Explanation:**
+
+- It fails after `{ _id: 'Coding', name: 'Coding' }` element. This is the default behaviour of MongoDB.
+
+- This is called an `Ordered insert` operation. inserts simply means that every element you insert is processed standalone.
+
+- but if one fails, it cancels the entire insert operation. but it does not `rollback` the elements that is already inserted.
+  
+- Often you want that behaviour but sometimes you don't and for this you can override the behaviour.
+
+### Unordered inserts
+  
+***let's Override***
+
+***Example:***
+
+```javascript
+db.hobbies.insertMany(
+  [
+    {
+      _id: "coding",
+      name: "Coding",
+    },
+    {
+      _id: "cooking",
+      name: "Cooking",
+    },
+    {
+      _id: "singing",
+      name: "Singing",
+    },
+  ],
+  {
+    ordered: false,
+  }
+)
+```
+
+***Note:***
+
+- When using `ordered : false`, MongoDB will continue to insert the remaining documents even if one or more documents cause an error (e.g., duplicate key error).
+  
+- By default the `ordered` option is set to `true`
+
+***Expected Output:***
+
+```javascript
+Uncaught:
+MongoBulkWriteError: E11000 duplicate key error collection: hobby.hobbies index: _id_ dup key: { _id: "Coding" }
+Result: BulkWriteResult {
+  insertedCount: 1,
+  matchedCount: 0,
+  modifiedCount: 0,
+  deletedCount: 0,
+  upsertedCount: 0,
+  upsertedIds: {},
+  insertedIds: { '2': 'Singing' }
+}
+Write Errors: [
+  WriteError {
+    err: {
+      index: 0,
+      code: 11000,
+      errmsg: 'E11000 duplicate key error collection: hobby.hobbies index: _id_ dup key: { _id: "Coding" }',
+      errInfo: undefined,
+      op: { _id: 'coding', name: 'Coding' }
+    }
+  },
+  WriteError {
+    err: {
+      index: 1,
+      code: 11000,
+      errmsg: 'E11000 duplicate key error collection: hobby.hobbies index: _id_ dup key: { _id: "Cooking" }',
+      errInfo: undefined,
+      op: { _id: 'cooking', name: 'Cooking' }
+    }
+  }
+]
+```
+
+***Explanation:***
+
+- If the `hobbies` collection already contains a document with `_id: "coding"` and `_id: "cooking"`, the insertion of the first and second document will fail due to a duplicate key error.
+  
+- However, because `ordered` is set to `false`, MongoDB will still attempt to insert the remaining documents.
+
+***lets Check :***
+
+```javascript
+db.hobbies.find()
+```
+
+***Expected Output:***
+
+```javascript
+[
+  { _id: 'Sports', name: 'Sports' },
+  { _id: 'Cooking', name: 'Cooking' }, // already exists
+  { _id: 'Reading', name: 'Reading' },
+  { _id: 'Coding', name: 'Coding' }, // already exists
+  { _id: 'Singing', name: 'Singing' } // new element Added
+]
+```
+
+### Write Concern and Journaling in MongoDB
+
+**Write Concern:**
+
+Write concern in MongoDB specifies the level of acknowledgment requested from MongoDB for write operations. It allows you to control the trade-off between performance and durability.
+
+**Levels of Write Concern:**
+
+1. **w: 0** - No acknowledgment is requested from the server.
+
+2. **w: 1** - Acknowledgment that the write operation has been written to the standalone mongod or the primary of a replica set.
+  
+3. **w: "majority"** - Acknowledgment that the write operation has been written to the majority of the nodes in the replica set.
+  
+4. **w: `<number>`** - Acknowledgment that the write operation has been written to a specified number of nodes.
+
+**Journaling:**
+
+Journaling is a feature that ensures data durability by recording write operations in a journal file before applying them to the database. This ensures that in the event of a crash or power failure, MongoDB can recover and restore the database to a consistent state.
+
+**How Journaling Works:**
+
+1. **Write Operation:** When a write operation (insert, update, delete) is performed, MongoDB writes the operation to the journal file.
+
+2. **Journal Commit Interval:** MongoDB commits the journal file to disk at regular intervals (default is 100 milliseconds).
+
+3. **Apply to Data Files:** After the journal file is committed, the write operation is applied to the database data files.
+
+**Benefits of Journaling:**
+
+- **Data Durability:** Ensures that write operations are not lost in case of a crash.
+
+- **Crash Recovery:** Allows MongoDB to recover to a consistent state after a crash by replaying the journal files.
+
+***Example:***
+
+***Insert a document into the users collection with write concern and journaling***
+
+```javascript
+db.users.insertOne(
+  { name: 'John Doe', age: 30 },
+  { writeConcern: { w: "majority", j: true, wtimeout: 5000 } }
+)
+```
+
+***Explanation:***
+
+- The document `{ name: 'John Doe', age: 30 }` is inserted into the `users` collection.
+
+- The write concern `{ w: "majority", j: true, wtimeout: 5000 }` ensures that the write operation is acknowledged only after it has been written to the majority of the nodes and the journal, within 5000 milliseconds (5 seconds).
+
+**Summary:**
+
+- **Write Concern:** Specifies the level of acknowledgment requested from MongoDB for write operations. In the example, `{ w: "majority", j: true, wtimeout: 5000 }` ensures the write is acknowledged by the majority of nodes and written to the journal within 5 seconds.
+
+- **Journaling:** Ensures data durability by recording write operations in a journal file. This helps MongoDB recover to a consistent state in case of a crash.
+
+### What is Atomictiy?
+
+Atomicity refers to the concept that a series of operations within a transaction are treated as a single unit. This means that either all operations within the transaction are executed successfully, or none of them are. If any operation within the transaction fails, the entire transaction is rolled back, ensuring that the database remains in a consistent state.
+
+**Atomicity in MongoDB:**
+
+- In MongoDB, atomicity is guaranteed at the document level. This means that single-document operations (inserts, updates, and deletes) are atomic.
+  
+- For multi-document transactions, MongoDB provides support for transactions in replica sets and sharded clusters starting from version 4.0.
+  
+***Example:***
+
+***Insert a Document***
+
+```javascript
+// Insert a document into the users collection
+db.users.insertOne({ name: 'John Doe', age: 30 })
+```
+
+***Update the Document Atomically***
+
+```javascript
+// Update the user's name and age atomically
+db.users.updateOne(
+  { name: 'John Doe' }, // Filter
+  { $set: { name: 'Jane Doe', age: 31 } } // Update
+)
+```
+
+***Explanation:***
+
+- The document `{ name: 'John Doe', age: 30 }` is inserted into the `users` collection.
+
+- The `updateOne` operation updates the user's `name` to `'Jane Doe'` and `age` to `31` atomically. This means that both fields are updated together, and if the operation fails, neither field is updated.
+
+***Summary***
+
+Atomicity ensures that a series of operations within a transaction are treated as a single unit. In MongoDB, single-document operations are atomic by default, and multi-document transactions are supported in replica sets and sharded clusters starting from version 4.0. This guarantees that either all operations within the transaction are executed successfully, or none of them are, maintaining the consistency of the database.
 
 ## Read a Document
 

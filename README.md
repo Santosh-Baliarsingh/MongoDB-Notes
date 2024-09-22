@@ -54,6 +54,19 @@
   - [Update a Document](#update-a-document)
     - [updateOne Method](#updateone-method)
     - [updateMany Method](#updatemany-method)
+    - [Updating Multiple Fields with `$set`](#updating-multiple-fields-with-set)
+    - [Increment and Decrement Values With `$inc` Operator](#increment-and-decrement-values-with-inc-operator)
+    - [`$min`, `$max`, and `$mul` in MongoDB](#min-max-and-mul-in-mongodb)
+    - [Getting Rid of Fields with `$unset` Operator](#getting-rid-of-fields-with-unset-operator)
+    - [`$rename` Operator in MongoDB](#rename-operator-in-mongodb)
+    - [`upsert` Option in MongoDB](#upsert-option-in-mongodb)
+    - [Adding Matched Array Elements With `$and` Operator](#adding-matched-array-elements-with-and-operator)
+    - [Adding Elements to an Array With `$push`](#adding-elements-to-an-array-with-push)
+    - [Updating a Matched Array Element With `$.`](#updating-a-matched-array-element-with-)
+    - [Updating All Array Elements With `$[]`](#updating-all-array-elements-with-)
+    - [Finding and Updating Specific Fields](#finding-and-updating-specific-fields)
+    - [Removing Elements from an Array With `$pull`](#removing-elements-from-an-array-with-pull)
+    - [UnderStanding `$addToSet`](#understanding-addtoset)
   - [Delete a Document](#delete-a-document)
     - [deleteOne Method](#deleteone-method)
     - [deleteMany Method](#deletemany-method)
@@ -1910,6 +1923,831 @@ Expected Output:
   upsertedCount: 0
 }
 ```
+
+### Updating Multiple Fields with `$set`
+
+The `$set` operator in MongoDB is used to update the value of one or more fields in a document. If the specified field does not exist, `$set` will add the field with the specified value.
+
+***Example:***
+
+Suppose we have a collection named `userData` and we want to update the `age` and `city` fields for a user with a specific `_id`.
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $set: {
+      age: 31,
+      city: 'San Francisco'
+    }
+  }
+)
+```
+
+***Verifying the Update:***
+
+To verify that the fields have been updated, you can use the `find` command:
+
+```javascript
+db.userData.find({ _id: ObjectId('66ea6dbbadd143d6bfc73bf9') })
+```
+
+***Expected Output:***
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 31,
+  email: 'jane.doe@example.com',
+  city: 'San Francisco'
+}
+```
+
+### Increment and Decrement Values With `$inc` Operator
+
+The `$inc` operator in MongoDB is used to increment or decrement the value of a field by a specified amount. If the field does not exist, `$inc` will create the field and set it to the specified value.
+
+***Example:***
+
+Suppose we have a collection named `userData` and we want to increment and decrement the `age` field for a user with a specific `_id`.
+
+**Incrementing Age:**
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $inc: {
+      age: 1
+    }
+  }
+)
+```
+
+***Expected Output:***
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 32, // Assuming the initial age was 31
+  email: 'jane.doe@example.com',
+  city: 'San Francisco'
+}
+```
+
+**Decrementing age:**
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $inc: {
+      age: -1
+    }
+  }
+)
+```
+
+***Expected Output:***
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 30, // Assuming the initial age was 31
+  email: 'jane.doe@example.com',
+  city: 'San Francisco'
+}
+```
+
+### `$min`, `$max`, and `$mul` in MongoDB
+
+MongoDB provides several operators to update fields in documents. Here, we will discuss the `$min`, `$max`, and `$mul` operators.
+
+**`$min` Operator:**
+
+The `$min` operator updates the value of the field to a specified value if the specified value is less than the current value of the field.
+
+***Example:***
+
+Suppose we have a collection named `userData` and we want to update the `age` field to a minimum value of 25 for a user with a specific `_id`.
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $min: {
+      age: 25
+    }
+  }
+)
+```
+
+***Explanation:***
+
+- `$min:` This operator is used to update the field to the specified value if the specified value is less than the current value.
+
+- `{ age: 25 }:` This sets the age field to 25 if the current age is greater than 25.
+
+***Expected Output:***
+
+**If the initial age was 30:**
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 25, // Updated to 25 because 25 < 30
+  email: 'jane.doe@example.com',
+  city: 'San Francisco'
+}
+```
+
+**`$max` Operator:**
+
+The `$max` operator updates the value of the field to a specified value if the specified value is greater than the current value of the field.
+
+***Example:***
+
+Suppose we have a collection named `userData` and we want to update the `age` field to a maximum value of 35 for a user with a specific `_id`.
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $max: {
+      age: 35
+    }
+  }
+)
+```
+
+***Explanation:***
+
+- `$max:` This operator is used to update the field to the specified value if the specified value is greater than the current value.
+
+- `{ age: 35 }:` This sets the age field to 35 if the current age is less than 35.
+
+***Expected Output***
+
+**If the initial age was 30:**
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 35, // Updated to 35 because 35 > 30
+  email: 'jane.doe@example.com',
+  city: 'San Francisco'
+}
+```
+
+**`$mul` Operator:**
+
+The `$mul` operator multiplies the value of the field by a specified value.
+
+***Example:***
+
+Suppose we have a collection named `userData` and we want to multiply the `age` field by 2 for a user with a specific `_id`.
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $mul: {
+      age: 2
+    }
+  }
+)
+```
+
+***Explanation***
+
+- `$mul:` This operator is used to multiply the field by the specified value.
+
+- `{ age: 2 }:` This multiplies the age field by 2.
+
+***Expected Output:***
+
+**If the initial age was 30:**
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 60, // Updated to 60 because 30 * 2 = 60
+  email: 'jane.doe@example.com',
+  city: 'San Francisco'
+}
+```
+
+### Getting Rid of Fields with `$unset` Operator
+
+The `$unset` operator in MongoDB is used to remove a field from a document. If the field does not exist, `$unset` does nothing.
+
+***Example:***
+
+***Suppose we have a collection named `userData` and we want to remove the `city` field for a user with a specific `_id`.***
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $unset: {
+      city: ""
+    }
+  }
+)
+```
+
+After running this command, the document with `_id: ObjectId('66ea6dbbadd143d6bfc73bf9')` will have its `city` field removed.
+
+***Verify the Update:***
+
+```javascript
+db.userData.find({ _id: ObjectId('66ea6dbbadd143d6bfc73bf9') })
+```
+
+***Expected Output***
+
+**If the initial document was:**
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 30,
+  email: 'jane.doe@example.com',
+  city: 'San Francisco'
+}
+```
+
+**The updated document will be:**
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 30,
+  email: 'jane.doe@example.com'
+}
+```
+
+### `$rename` Operator in MongoDB
+
+The `$rename` operator in MongoDB is used to rename a field in a document. If the field does not exist, `$rename` does nothing.
+
+***Example:***
+
+Suppose we have a collection named `userData` and we want to rename the `city` field to `location` for a user with a specific `_id`.
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $rename: {
+      city: "location"
+    }
+  }
+)
+```
+
+After running this command, the document with `_id: ObjectId('66ea6dbbadd143d6bfc73bf9')` will have its `city` field renamed to `location`.
+
+***Expected Output:***
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  name: 'Jane Doe',
+  age: 30,
+  email: 'jane.doe@example.com',
+  location: 'San Francisco' // Renamed from 'city' to 'location'
+}
+```
+
+### `upsert` Option in MongoDB
+
+he `upsert` option in MongoDB is used in update operations to insert a new document if no document matches the query criteria. If a document matches the query criteria, it will be updated.
+
+***ExampleL***
+
+Suppose we have a collection named `userData` and we want to update the `age` field for a user with a specific `_id`. If the user does not exist, we want to insert a new document with the specified `_id` and `age`.
+
+```javascript
+db.userData.updateOne(
+  { _id: ObjectId('66ea6dbbadd143d6bfc73bf9') },
+  {
+    $set: {
+      age: 30
+    }
+  },
+  { upsert: true }
+)
+```
+
+- If a document with `_id: ObjectId('66ea6dbbadd143d6bfc73bf9')` exists, its `age` field will be updated to 30.
+
+- If no such document exists, a new document will be inserted with `_id: ObjectId('66ea6dbbadd143d6bfc73bf9')` and `age:` 30.
+
+***Expected Output:***
+
+**If the document was updated:**
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  age: 30
+}
+```
+
+**If the document was Inserted:**
+
+```javascript
+{
+  _id: ObjectId('66ea6dbbadd143d6bfc73bf9'),
+  age: 30
+}
+```
+
+### Adding Matched Array Elements With `$and` Operator
+
+The `$and` operator in MongoDB is used to join query clauses with a logical AND. It returns documents that match all the conditions specified in the `$and` array.
+
+***Example:***
+
+Suppose we have a collection named `userData` and we want to find users who are older than 25 and live in `San Francisco`.
+
+```javascript
+db.userData.find({
+  $and: [
+    { age: { $gt: 25 } },
+    { city: "San Francisco" }
+  ]
+})
+```
+
+**Explanation:**
+
+1. **Collection:** userData is the collection we are querying.
+2. **Query:**
+
+- `$and:` : This operator is used to combine multiple conditions.
+- `[ { age: { $gt: 25 } }, { city: "San Francisco" } ]:` This array contains the conditions that must all be met for a document to be returned.
+  
+- `{ age: { $gt: 25 } }:` This condition specifies that the `age` field must be greater than 25.
+  
+- `{ city: "San Francisco" }:` This condition specifies that the `city` field must be `San Francisco`.
+
+***After running this query, MongoDB will return documents where the age field is greater than 25 and the `city` field is `San Francisco`.***
+
+***Verifying the Query***
+
+To verify the query, you can use the `find` command:
+
+```javascript
+db.userData.find({
+  $and: [
+    { age: { $gt: 25 } },
+    { city: "San Francisco" }
+  ]
+})
+```
+
+***Expected Output:***
+
+If the collection contains the following documents:
+
+```javascript
+[
+  { _id: ObjectId('1'), name: 'Alice', age: 30, city: 'San Francisco' },
+  { _id: ObjectId('2'), name: 'Bob', age: 20, city: 'San Francisco' },
+  { _id: ObjectId('3'), name: 'Charlie', age: 35, city: 'Los Angeles' }
+]
+```
+
+The query will return:
+
+```javascript
+[
+  { _id: ObjectId('1'), name: 'Alice', age: 30, city: 'San Francisco' }
+]
+```
+
+### Adding Elements to an Array With `$push`
+
+To add elements to an array within a document, you can use the `$push` operator in MongoDB. This operator appends a specified value to an array.
+
+***Example:***
+
+Consider the following document in the `users` collection:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 2 }
+  ]
+}
+```
+
+**Update Query:**
+
+To add a new hobby, `cycling`, with a `frequency` of `1` to the `hobbies` array, you can use the following query:
+
+```javascript
+db.users.updateOne(
+  { _id: ObjectId('1') },
+  {
+    $push: {
+      hobbies: { name: 'cycling', frequency: 1 }
+    }
+  }
+)
+```
+
+***Explanation:***
+
+- `db.users.updateOne:` This function updates a single document in the users collection.
+
+- **Query Part:** `{ _id: ObjectId('1') }`
+  
+  - This part of the query finds the document where `_id` is `ObjectId('1')`.
+
+- **Update Part:** `$push: { hobbies: { name: 'cycling', frequency: 1 } }`
+  
+  - The `$push` operator is used to add a new element to the `hobbies` array.
+  
+  - `{ name: 'cycling', frequency: 1 }` specifies the new element to be added to the array.
+
+**Expected Output:**
+
+After running the update query, the document will be updated as follows:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 2 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+### Updating a Matched Array Element With `$.`
+
+To update a specific element in an array within a document, you can use the `$` positional operator. This operator identifies the first array element that matches the query condition.
+
+***Example:***
+
+**Consider the following document in the `users` collection:**
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 2 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+**Update Query:**
+
+To update the `frequency` of the `swimming` hobby to `4`, you can use the following query:
+
+```javascript
+db.users.updateOne(
+  { _id: ObjectId('1'), 'hobbies.name': 'swimming' },
+  { $set: { 'hobbies.$.frequency': 4 } }
+)
+```
+
+**Explanation:**
+
+- `db.users.updateOne:` This function updates a single document in the `users` collection.
+
+- Query Part: `{ _id: ObjectId('1'), 'hobbies.name': 'swimming' }`
+  
+  - This part of the query finds the document where `_id` is `ObjectId('1')` and there is an element in the `hobbies` array with the `name` equal to `swimming`.
+
+- Update Part: `{ $set: { 'hobbies.$.frequency': 4 } }`
+
+  - The `$set` operator is used to update the value of a field.
+  
+  - The `$` positional operator is used to identify the first element in the array that matches the query condition `('hobbies.name': 'swimming')`.
+  
+  - `hobbies.$.frequency` specifies that the `frequency` field of the matched `hobbies` array element should be updated to `4`.
+
+***Expected Output:***
+
+After running the update query, the document will be updated as follows:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 4 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+***The frequency of the swimming hobby has been updated from 2 to 4.***
+
+### Updating All Array Elements With `$[]`
+
+To update all elements in an array within a document, you can use the `$[]` positional operator. This operator allows you to update all elements in an array that match the query condition.
+
+***Example:***
+
+Consider the following document in the `users` collection:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 2 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+**Update Query:**
+
+To update the `frequency` of all hobbies to `5`, you can use the following query:
+
+```javascript
+db.users.updateOne(
+  { _id: ObjectId('1') },
+  { $set: { 'hobbies.$[].frequency': 5 } }
+)
+```
+
+**Explanation:**
+
+- `db.users.updateOne:` This function updates a single document in the `users` collection.
+  
+- **Query Part:** `{ _id: ObjectId('1') }`
+  
+  - This part of the query finds the document where `_id` is `ObjectId('1')`.
+  
+- **Update Part:** `{ $set: { 'hobbies.$[].frequency': 5 } }`
+  
+  - The `$set` operator is used to update the value of a field.
+  
+  - The `$[]` positional operator is used to identify all elements in the array.
+  
+  - `hobbies.$[].frequency` specifies that the `frequency` field of all elements in the `hobbies` array should be updated to `5`.
+
+**Expected Output:**
+
+After running the update query, the document will be updated as follows:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 5 },
+    { name: 'swimming', frequency: 5 },
+    { name: 'cycling', frequency: 5 }
+  ]
+}
+```
+
+### Finding and Updating Specific Fields
+
+To find a document and update specific fields, you can use the `findOneAndUpdate` method in MongoDB. This method allows you to find a document based on a query and update specific fields in that document.
+
+***Example:***
+
+Consider the following document in the `users` collection:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  age: 30,
+  city: 'San Francisco',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 2 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+**Find and Update Query:**
+
+To find the document where `name` is `Alice` and update the `age` to 31 and the `frequency` of the `swimming` hobby to `4`, you can use the following query:
+
+```javascript
+db.users.findOneAndUpdate(
+  { name: 'Alice' },
+  {
+    $set: {
+      age: 31,
+      'hobbies.$[elem].frequency': 4
+    }
+  },
+  {
+    arrayFilters: [{ 'elem.name': 'swimming' }],
+    returnNewDocument: true
+  }
+)
+```
+
+**Explanation:**
+
+- `db.users.findOneAndUpdate:` This function finds a single document in the `users` collection and updates it.
+  
+- **Query Part:** `{ name: 'Alice' }`
+  
+  - This part of the query finds the document where `name` is `Alice`.
+
+- **Update Part:** `$set: { age: 31, 'hobbies.$[elem].frequency': 4 }`
+  
+  - The `$set` operator is used to update the value of fields.
+  
+  - `age:` 31 updates the `age` field to `31`.
+  
+  - `'hobbies.$[elem].frequency': 4` updates the `frequency` field of the matched element in the `hobbies` array to `4`.
+
+- **Array Filters:** `arrayFilters: [{ 'elem.name': 'swimming' }]`
+
+  - This specifies that the update should only apply to elements in the `hobbies` array where the `name` is `swimming`.
+  
+- **Options:** `returnNewDocument: true`
+  
+  - This option ensures that the updated document is returned.
+
+**Expected Output:**
+
+After running the find and update query, the document will be updated as follows:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  age: 31,
+  city: 'San Francisco',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 4 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+***Note: You can use the updateMany method if you want to update multiple documents that match a query. Here’s how you can use updateMany to update specific fields in all matching documents.***
+
+### Removing Elements from an Array With `$pull`
+
+To remove elements from an array within a document, you can use the `$pull` operator in MongoDB. This operator removes all array elements that match a specified condition.
+
+***Example:***
+
+Consider the following document in the `users` collection:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 4 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+***Note: `frequency` is a field within each object in the `hobbies` array. It represents how often the user engages in a particular hobby.***
+
+**Update Query:**
+
+To remove the `swimming` hobby from the `hobbies` array, you can use the following query:
+
+```javascript
+db.users.updateOne(
+  { _id: ObjectId('1') },
+  {
+    $pull: {
+      hobbies: { name: 'swimming' }
+    }
+  }
+)
+```
+
+**Explanation:**
+
+- `db.users.updateOne:` This function updates a single document in the `users` collection.
+  
+- **Query Part:** `{ _id: ObjectId('1') }`
+  
+  - This part of the query finds the document where _id is ObjectId('1').
+
+- **Update Part:$pull:** `{ hobbies: { name: 'swimming' } }`
+  
+  - The `$pull` operator is used to remove elements from the `hobbies` array.
+  
+  - `{ name: 'swimming' }` specifies the condition to match elements to be removed from the array.
+
+**Expected Output:**
+
+After running the update query, the document will be updated as follows:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'cycling', frequency: 1 }
+  ]
+}
+```
+
+### UnderStanding `$addToSet`
+
+The `$addToSet` operator in MongoDB is used to add an element to an array only if the element does not already exist in the array. This ensures that there are no duplicate values in the array.
+
+- **Purpose:** The `$addToSet` operator adds a value to an array only if the value is not already present in the array.
+
+- **Use Case:** It is useful when you want to maintain a unique set of elements in an array.
+
+***Example:***
+
+Consider the following document in the `users` collection:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 4 }
+  ],
+  tags: ['active', 'outdoor']
+}
+```
+
+**Update Query:**
+
+To add a new tag, `indoor`, to the `tags` array only if it does not already exist, you can use the following query:
+
+```javascript
+db.users.updateOne(
+  { _id: ObjectId('1') },
+  {
+    $addToSet: {
+      tags: 'indoor'
+    }
+  }
+)
+```
+
+**Explanation:**
+
+- **db.users.updateOne:** This function updates a single document in the users collection.
+
+- **Query Part:** `{ _id: ObjectId('1') }`
+  
+  - This part of the query finds the document where _id is ObjectId('1').
+
+- **Update Part:** `$addToSet: { tags: 'indoor' }`
+  
+  - The `$addToSet` operator is used to add the value `'indoor'` to the `tags` array only if it does not already exist in the array.
+
+**Expected Output:**
+
+After running the update query, the document will be updated as follows:
+
+```javascript
+{
+  _id: ObjectId('1'),
+  name: 'Alice',
+  hobbies: [
+    { name: 'reading', frequency: 3 },
+    { name: 'swimming', frequency: 4 }
+  ],
+  tags: ['active', 'outdoor', 'indoor']
+}
+```
+
+***Note: If the `tags` array already contained `'indoor'`, the array would remain unchanged.***
 
 ## Delete a Document
 

@@ -99,6 +99,27 @@
     - [Create the Collection with Validation](#create-the-collection-with-validation)
     - [Insert Document](#insert-document)
     - [Handle Validation Errors](#handle-validation-errors)
+  - [3. Working with Indexes](#3-working-with-indexes)
+    - [What are Indexes and Why do we use them?](#what-are-indexes-and-why-do-we-use-them)
+    - [Why Use Indexes?](#why-use-indexes)
+    - [Creating an Index](#creating-an-index)
+    - [Removing Indexes](#removing-indexes)
+    - [Creating Compound Indexes](#creating-compound-indexes)
+    - [Using Indexes for Sorting](#using-indexes-for-sorting)
+    - [Default Index](#default-index)
+    - [Understanding Partial Filter Expressions](#understanding-partial-filter-expressions)
+    - [Time to Live (TTL) Index in MongoDB](#time-to-live-ttl-index-in-mongodb)
+    - [Understanding Covered Queries](#understanding-covered-queries)
+    - [How MongoDB Rejects a Query Plan](#how-mongodb-rejects-a-query-plan)
+    - [Multi-Key Indexes in MongoDB](#multi-key-indexes-in-mongodb)
+    - [Text Indexes in MongoDB](#text-indexes-in-mongodb)
+    - [Text Indexes and Sorting in MongoDB](#text-indexes-and-sorting-in-mongodb)
+    - [Combining Text Index with Other Indexes in MongoDB](#combining-text-index-with-other-indexes-in-mongodb)
+    - [Excluding Words in Text Index Queries in MongoDB](#excluding-words-in-text-index-queries-in-mongodb)
+    - [Setting the Default Language and Using Weights in MongoDB Text Indexes](#setting-the-default-language-and-using-weights-in-mongodb-text-indexes)
+    - [Building Indexes in MongoDB](#building-indexes-in-mongodb)
+    - [Importing JSON to MongoDB Shell](#importing-json-to-mongodb-shell)
+    - [More Details](#more-details)
 
 ## What is MongoDB?
 
@@ -3917,3 +3938,1185 @@ Additional information: {
 - **The MongoDB Limits:** [https://docs.mongodb.com/manual/reference/limits/](https://docs.mongodb.com/manual/reference/limits/)
 - **The MongoDB Data Types:** [https://docs.mongodb.com/manual/reference/bson-types/](https://docs.mongodb.com/manual/reference/bson-types/)
 - **More on Schema Validation:** [https://docs.mongodb.com/manual/core/schema-validation/](https://docs.mongodb.com/manual/core/schema-validation/)
+
+## 3. Working with Indexes
+
+### What are Indexes and Why do we use them?
+
+- `Indexes` in MongoDB are special data structures that store a small portion of the data set in an easy-to-traverse form. They are used to improve the speed of data retrieval operations on a database table at the cost of additional space and slower writes.
+  
+- Without `indexes`, MongoDB must perform a collection scan, i.e., scan every document in a collection, to select those documents that match the query statement.
+
+### Why Use Indexes?
+
+1. **Performance Improvement:** Indexes significantly improve query performance by reducing the amount of data MongoDB needs to scan.
+
+2. **Efficient Sorting:** Indexes can also be used to efficiently sort query results.
+
+3. **Uniqueness:** Unique indexes ensure that the indexed fields do not store duplicate values.
+
+***Example:***
+
+Consider a collection `users` with documents that have the following structure:
+
+```javascript
+{
+  "name": "John Doe",
+  "age": 30,
+  "email": "john.doe@example.com"
+}
+```
+
+### Creating an Index
+
+To create an index on the `email` field, you can use the following command:
+
+```javascript
+db.users.createIndex({ email: 1 })
+```
+
+This command creates an ascending index on the `email` field.
+
+**Query with Index:**
+
+When you query the `users` collection by email, MongoDB can use the index to quickly locate the documents:
+
+```javascript
+db.users.find({ email: "john.doe@example.com" })
+```
+
+***Note:Without the `index`, MongoDB would need to scan every document in the `users` collection to find the matching document.***
+
+***Summary:***
+
+`Indexes` are crucial for optimizing query performance in MongoDB. They allow for faster data retrieval and efficient sorting, making them an essential tool for managing large datasets.
+
+### Removing Indexes
+
+To remove the index on the `email` field, you can use the following command:
+
+```javascript
+db.users.dropIndex({ email: 1 })
+```
+
+***Expected Output:***
+
+```javascript
+{
+  "nIndexesWas": 2, // Number of indexes before the drop operation
+  "ok": 1,          // Status of the operation (1 indicates success)
+}
+```
+
+### Creating Compound Indexes
+
+`Compound indexes` are indexes that include more than one field. They are useful for queries that need to filter or sort on multiple fields. By creating a compound index, MongoDB can use the index to optimize queries that involve any prefix of the fields in the index.
+
+***Example:***
+
+Suppose you have a collection `orders` with documents that include `customerId` and `orderDate` fields. You can create a compound index on these fields to optimize queries that filter by `customerId` and sort by `orderDate`.
+
+To create a compound index on the `customerId` and `orderDate` fields, use the following command:
+
+```javascript
+db.orders.createIndex({ customerId: 1, orderDate: 1 })
+```
+
+***Note:***
+
+- This index will not be as efficient for queries that only filter by `orderDate` because the index is structured to prioritize `customerId` first.
+  
+- By using `compound indexes`, you can significantly improve the performance of your queries, especially when dealing with large datasets.
+
+### Using Indexes for Sorting
+
+Indexes can also be used to optimize sorting operations in MongoDB. When you create an index on a field or a set of fields, MongoDB can use that index to sort the results of a query efficiently.
+
+***Example:***
+
+Suppose you have a collection `products` with documents that include `category` and `price` fields. You can create an index on these fields to optimize queries that sort by `category` and `price`.
+
+To create an index on the `category` and `price` fields, use the following command:
+
+```javascript
+db.products.createIndex({ category: 1, price: -1 })
+```
+
+in the above example
+
+- **category: 1** specifies an ascending order for the `category` field.
+
+- **price: -1** specifies a descending order for the `price` field.
+
+***Explanation:***
+
+The index `{ category: 1, price: -1 }` can be used to optimize the following types of queries:
+
+1. Queries that sort by `category` and `price`:
+
+   ```javascript
+   db.products.find().sort({ category: 1, price: -1 })
+   ```
+
+2. Queries that filter by `category` and sort by `price`:
+
+   ```javascript
+   db.products.find({ category: "electronics" }).sort({ price: -1 })
+   ```
+
+By using indexes for sorting, you can significantly improve the performance of your queries, especially when dealing with large datasets. MongoDB can quickly locate the sorted order of documents using the index, avoiding the need for an in-memory sort operation.
+
+### Default Index
+
+- In MongoDB, every collection has a default index on the `_id field`.
+  
+- This index is created automatically when the collection is created and ensures that each document in the collection has a unique identifier.
+
+***Example:***
+
+Suppose you have a collection `users`. When you insert documents into this collection, MongoDB automatically creates an index on the `_id` field:
+
+```javascript
+db.users.insertMany([
+  { _id: 1, name: "Alice", age: 30 },
+  { _id: 2, name: "Bob", age: 25 },
+  { _id: 3, name: "Charlie", age: 35 }
+])
+```
+
+***Explanation:***
+
+The default index on the `_id` field can be used to optimize the following types of queries:
+
+1. Queries that filter by `_id`:
+
+   ```javascript
+   db.users.find({ _id: 1 })
+   ```
+
+2. Queries that sort by `_id`:
+
+   ```javascript
+   db.users.find().sort({ _id: 1 })
+   ```
+
+By using the default index, MongoDB can quickly locate documents by their unique identifier and efficiently sort documents based on the `_id` field.
+
+**`getIndexes()` Method:**
+
+The getIndexes() method in MongoDB is used to list all the indexes on a collection. This can be useful to verify which indexes exist and to understand how queries might be optimized.
+
+```javascript
+db.users.getIndexes()
+```
+
+The `getIndexes()` method returns an array of documents, where each document describes an index on the collection. Each document includes fields such as the index key, the index name, and other index options.
+
+### Understanding Partial Filter Expressions
+
+Partial filter expressions in MongoDB allow you to create indexes on a subset of documents in a collection. This can be useful for optimizing queries that only need to access a specific subset of documents, reducing the index size and improving performance.
+
+**Creating an Index with a `PartialFilterExpression`:**
+
+To create an index with a partial filter expression, you can use the `createIndex` method and specify the `partialFilterExpression` option.
+
+```javascript
+db.users.createIndex(
+   { age: 1 },
+   { partialFilterExpression: { age: { $gt: 18 } } }
+)
+```
+
+In this example, an index is created on the `age` field, but only for documents where the `age` field is greater than 18.
+
+**Applying the Partial Index:**
+
+Once you have created a partial index, MongoDB will automatically use it for queries that match the partial filter expression. You don't need to do anything special in your query to use the partial index.
+
+**Example Query Utilizing the Partial Index:**
+
+Assuming you have created the partial index on the `age` field for documents where `age` is greater than 18, as shown earlier:
+
+```javascript
+db.users.createIndex(
+   { age: 1 },
+   { partialFilterExpression: { age: { $gt: 18 } } }
+)
+```
+
+You can run a query that will utilize this partial index:
+
+```javascript
+db.users.find({ age: { $gt: 18 } })
+```
+
+In this query, MongoDB will use the partial index to quickly find documents where the `age` field is greater than 18, improving the query performance.
+
+***Note:***  If you run a query that does not match the partial filter expression, MongoDB will not use the partial index. For example:
+
+```javascript
+db.users.find({ age: { $lte: 18 } })
+```
+
+In this case, MongoDB will not use the partial index because the query condition does not match the partial filter expression `(age > 18)`.
+
+### Time to Live (TTL) Index in MongoDB
+
+A `Time to Live (TTL)` index in MongoDB is a special type of index that allows you to automatically delete documents from a collection after a certain period of time. This is particularly useful for data that is only relevant for a limited period, such as session information, logs, or temporary data.
+
+**Creating a TTL Index:**
+
+To create a TTL index, you need to specify the field on which the TTL index will be created and the expiration time in seconds. The field must be of the BSON date type.
+
+***Example:***
+
+Let's create a TTL index on a collection named `sessions` where documents should expire 3600 seconds (1 hour) after the `createdAt` field.
+
+```javascript
+// Insert a document with a createdAt field
+db.sessions.insertOne({
+  sessionId: "abc123",
+  userId: "user1",
+  createdAt: new Date()
+});
+
+// Create a TTL index on the createdAt field with an expiration time of 3600 seconds
+db.sessions.createIndex(
+  { "createdAt": 1 },
+  { expireAfterSeconds: 3600 }
+);
+```
+
+***Explanation:***
+
+1. **Insert a Document:** We insert a document into the `sessions` collection with a `createdAt` field set to the current date and time.
+
+2. **Create a TTL Index:** We create a TTL index on the `createdAt` field with an expiration time of 3600 seconds. MongoDB will automatically delete documents from the `sessions` collection when the `createdAt` field is older than 3600 seconds.
+
+***Notes:***
+
+- The TTL index works in the background and may not delete expired documents immediately after they expire. The background task that removes expired documents runs every 60 seconds.
+
+- The field used for the TTL index must be of the BSON date type. If the field is not a date, the TTL index will not work as expected.
+
+By using TTL indexes, you can efficiently manage and clean up your collections without manual intervention.
+
+### Understanding Covered Queries
+
+- A covered query is a query in MongoDB where all the fields in the query are part of an index, and the fields returned in the results are also part of the same index.
+
+- This means that MongoDB can fulfill the query using only the index, without having to read the actual documents from the collection. Covered queries are efficient because they reduce the amount of data that needs to be read and processed.
+
+***Benefits of Covered Queries***
+
+1. **Performance:** Since the query can be satisfied using only the index, it reduces the I/O operations needed to fetch documents from the collection.
+
+2. **Efficiency:** Covered queries can be faster because they avoid scanning the entire collection and only access the index.
+
+3. **Reduced Load:** By using indexes, covered queries can reduce the load on the database, leading to better overall performance.
+
+***Example***
+
+Let's consider a collection named `users` with documents that have the fields `username`, `email`, and `age`.
+
+1. **Create an Index:** Create a compound index on the `username` and `email` fields.
+
+   ```javascript
+   db.users.createIndex({ username: 1, email: 1 });
+   ```
+
+2. Covered Query: Perform a query that only uses the fields in the index and returns only those fields.
+
+   ```javascript
+   // Query to find a user by username and email, returning only the   username and email fields
+    db.users.find(
+    { username: "johndoe", email: "johndoe@example.com" },
+    { username: 1, email: 1, _id: 0 }
+    ).explain("executionStats");
+   ```
+
+***Explanation***
+
+1. **Create an Index:** We create a compound index on the `username` and `email` fields. This index will be used to cover the query.
+
+2. **Covered Query:** The query searches for a user by `username` and `email`, and it only returns the `username` and `email` fields. The `_id` field is excluded from the results using `{ _id: 0 }`.
+
+**Output of `explain()`**
+
+The output of the `explain()` method will show that the query is a covered query. Look for the following indicators:
+
+- **IXSCAN:** Indicates that the query used an index scan.
+- **Index Only:** The `indexOnly` field in the explain output will be `true`, indicating that the query was covered by the index.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "PROJECTION_COVERED",
+      "inputStage": {
+        "stage": "IXSCAN",
+        "indexName": "username_1_email_1",
+        "keyPattern": { "username": 1, "email": 1 },
+        "indexOnly": true
+      }
+    }
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 1,
+    "totalKeysExamined": 1,
+    "totalDocsExamined": 0
+  }
+}
+```
+
+***Summary:***
+
+- **Covered Query:** A query where all fields in the query and the results are part of an index.
+- **Benefits:** Improved performance, efficiency, and reduced load on the database.
+- **Example:** Create a compound index and perform a query that uses only the indexed fields.
+
+Covered queries are a powerful feature in MongoDB that can significantly enhance query performance by leveraging indexes effectively.
+
+### How MongoDB Rejects a Query Plan
+
+MongoDB uses a query optimizer to evaluate multiple query plans and select the most efficient one. The optimizer generates several candidate plans and executes them to determine their performance. Plans that do not meet certain criteria or perform poorly are rejected.
+
+***Example:***
+
+Let's consider a collection named `products` with documents that have the fields `name`, `category`, and `price`.
+
+1. **Indexes:** Create multiple indexes on the products collection.
+
+   ```javascript
+   db.products.createIndex({ name: 1 });
+   db.products.createIndex({ category: 1 });
+   db.products.createIndex({ price: 1 });
+   ```
+
+2. **Query:** Perform a query that could use multiple indexes.
+
+   ```javascript
+   db.products.find({ category: "electronics", price: { $lt: 1000 } }).explain("executionStats");
+   ```
+
+***Explanation:***
+
+1. **Indexes:** We create three separate indexes on the name, category, and price fields.
+
+2. **Query:** The query searches for products in the electronics category with a price less than 1000. This query can potentially use the category index, the price index, or a combination of both.
+
+***Query Plan Evaluation:***
+
+When the query is executed, MongoDB's query optimizer evaluates multiple candidate plans:
+
+1. **Candidate Plans:** The optimizer generates candidate plans using different indexes and combinations of indexes.
+
+2. **Execution:** The optimizer executes the candidate plans to gather performance statistics.
+
+3. **Plan Selection:** The optimizer selects the most efficient plan based on the execution statistics.
+
+***Output of `explain()`:***
+
+The output of the explain() method will show the winning plan and the rejected plans.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "FETCH",
+      "inputStage": {
+        "stage": "IXSCAN",
+        "indexName": "category_1",
+        "keyPattern": { "category": 1 },
+        "indexBounds": {
+          "category": ["[\"electronics\", \"electronics\"]"]
+        }
+      }
+    },
+    "rejectedPlans": [
+      {
+        "stage": "FETCH",
+        "inputStage": {
+          "stage": "IXSCAN",
+          "indexName": "price_1",
+          "keyPattern": { "price": 1 },
+          "indexBounds": {
+            "price": ["[MinKey, 1000)"]
+          }
+        }
+      }
+    ]
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 10,
+    "totalKeysExamined": 10,
+    "totalDocsExamined": 10
+  }
+}
+```
+
+***Explanation of Output***
+
+- **Winning Plan:** The winning plan uses the `category` index to fetch documents.
+  
+- **Rejected Plans:** The rejected plans include a plan that uses the `price` index. This plan was rejected because it was less efficient than the winning plan.
+
+**Summary:**
+
+- **Query Optimizer:** MongoDB's query optimizer evaluates multiple candidate plans and selects the most efficient one.
+
+- **Candidate Plans:** The optimizer generates and executes candidate plans using different indexes.
+
+- **Plan Selection:** The optimizer selects the winning plan based on execution statistics and rejects less efficient plans.
+
+### Multi-Key Indexes in MongoDB
+
+- A multi-key index in MongoDB is an index that allows you to index fields that contain arrays.
+  
+- When you create a multi-key index on a field that contains an array, MongoDB creates separate index entries for each element of the array. This allows you to efficiently query documents based on the elements of the array.
+
+***Example:***
+
+Let's consider a collection named `orders` with documents that have the fields `orderId`, `customerName`, and `items` (where `items` is an array of product names).
+
+1. **Insert Documents:** Insert sample documents into the orders collection.
+
+   ```javascript
+   db.orders.insertMany([
+   { orderId: 1, customerName: "Alice", items: ["apple", "banana", "orange"] },
+   { orderId: 2, customerName: "Bob", items: ["banana", "grape"] },
+   { orderId: 3, customerName: "Charlie", items: ["apple", "grape", "watermelon"] }
+    ]);
+   ```
+
+2. **Create a Multi-Key Index:** Create a multi-key index on the items field.
+
+   ```javascript
+   db.orders.createIndex({ items: 1 });
+   ```
+
+3. **Query Using the Multi-Key Index:** Perform a query to find orders that contain a specific item.
+
+   ```javascript
+   // Query to find orders that contain the item "apple"
+   db.orders.find({ items: "apple" }).explain("executionStats");
+   ```
+
+***Explanation:***
+
+1. **Insert Documents:** We insert three documents into the `orders` collection. Each document has an `items` field that contains an array of product names.
+
+2. **Create a Multi-Key Index:** We create a multi-key index on the `items` field. MongoDB will create separate index entries for each element in the `items` array.
+
+3. **Query Using the Multi-Key Index:** We perform a query to find orders that contain the item "apple". The multi-key index allows MongoDB to efficiently find documents where the `items` array contains "apple".
+
+***Output of `explain()`***
+
+The output of the `explain()` method will show that the query used the multi-key index.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "FETCH",
+      "inputStage": {
+        "stage": "IXSCAN",
+        "indexName": "items_1",
+        "keyPattern": { "items": 1 },
+        "indexBounds": {
+          "items": ["[\"apple\", \"apple\"]"]
+        }
+      }
+    }
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 2,
+    "totalKeysExamined": 2,
+    "totalDocsExamined": 2
+  }
+}
+```
+
+***Explanation:***
+
+- **Winning Plan:** The winning plan uses the `items` multi-key index to fetch documents.
+
+- **Index Scan:** The `IXSCAN` stage indicates that the query used an index scan on the `items` index.
+
+- **Index Bounds:** The `indexBounds` field shows that the query searched for the item "apple" within the `items` array.
+
+***Summary:***
+
+- **Multi-Key Index:** An index that allows you to index fields containing arrays, creating separate index entries for each element.
+
+- **Example:** Create a multi-key index on the `items` field of the `orders` collection and query for documents containing a specific item.
+
+- **Efficiency:** Multi-key indexes enable efficient querying of documents based on array elements, improving query performance.
+
+Multi-key indexes are a powerful feature in MongoDB that allow you to efficiently query documents with array fields, making them essential for handling complex data structures.
+
+### Text Indexes in MongoDB
+
+Text indexes in MongoDB allow you to perform text search queries on string content within your documents. They are particularly useful for searching large collections of text data, such as articles, blog posts, or product descriptions.
+
+**Creating a Text Index:**
+
+To create a text index, you use the `createIndex` method with the `text` index type. You can create a text index on a single field or multiple fields.
+
+***Example:***
+
+Let's consider a collection named `articles` with documents that have the fields `title` and `content`.
+
+1. **Insert Documents:** Insert sample documents into the articles collection.
+
+   ```javascript
+   db.articles.insertMany([
+   { title: "Introduction to MongoDB", content: "MongoDB is a NoSQL database that offers high performance and scalability." },
+   { title: "Advanced MongoDB Queries", content: "Learn how to perform advanced queries in MongoDB, including text search and aggregation." },
+   { title: "MongoDB Indexing", content: "Indexing in MongoDB improves query performance by allowing efficient data retrieval." }
+   ]);
+   ```
+
+2. **Create a Text Index:** Create a text index on the title and content fields.
+
+   ```javascript
+   db.articles.createIndex({ title: "text", content: "text" });
+   ```
+
+3. **Query Using the Text Index:** Perform a text search query to find articles that contain specific keywords.
+
+   ```javascript
+   // Query to find articles that contain the keyword "MongoDB"
+   db.articles.find({ $text: { $search: "MongoDB" } }).explain("executionStats");
+   ```
+
+***Explanation:***
+
+1. **Insert Documents:** We insert three documents into the articles collection. Each document has a title and content field containing text data.
+
+2. **Create a Text Index:** We create a text index on the title and content fields. This allows MongoDB to perform text search queries on these fields.
+
+3. **Query Using the Text Index:** We perform a text search query to find articles that contain the keyword "MongoDB". The $text operator is used to specify the text search query.
+
+**Output of `explain()`:**
+
+The output of the explain() method will show that the query used the text index.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "TEXT",
+      "indexName": "title_text_content_text",
+      "inputStage": {
+        "stage": "FETCH"
+      }
+    }
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 3,
+    "totalKeysExamined": 3,
+    "totalDocsExamined": 3
+  }
+}
+```
+
+***Explanation of Output:***
+
+- **Winning Plan:** The winning plan uses the `TEXT` stage, indicating that the query used a text index.
+
+- **Index Name:** The `indexName` field shows the name of the text index used for the query.
+
+- **Execution Stats:** The `executionStats` section provides details about the query execution, including the number of documents returned and examined.
+
+***Summary***
+
+- **Text Index:** An index that allows you to perform text search queries on string content within your documents.
+
+- **Example:** Create a text index on the `title` and `content` fields of the `articles` collection and perform a text search query.
+
+- **Efficiency:** Text indexes enable efficient text search queries, improving the performance of search operations on large collections of text data.
+
+Text indexes are a powerful feature in MongoDB that allow you to efficiently search and retrieve documents based on text content, making them essential for applications that require full-text search capabilities.
+
+### Text Indexes and Sorting in MongoDB
+
+When using text indexes in MongoDB, you can perform text search queries and sort the results. However, there are some limitations and considerations to keep in mind when combining text search with sorting.
+
+***Example:***
+
+Let's continue with the `articles` collection from the previous example, which has a text index on the `title` and content `fields`.
+
+1. **Insert Documents:** Insert sample documents into the `articles` collection.
+
+   ```javascript
+   db.articles.insertMany([
+   { title: "Introduction to MongoDB", content: "MongoDB is a NoSQL database that offers high performance and scalability.", date: new Date("2023-01-01") },
+   { title: "Advanced MongoDB Queries", content: "Learn how to perform advanced queries in MongoDB, including text search and aggregation.", date: new Date("2023-02-01") },
+   { title: "MongoDB Indexing", content: "Indexing in MongoDB improves query performance by allowing efficient data retrieval.", date: new Date("2023-03-01") }
+   ]);
+   ```
+
+2. **Create a Text Index:** Create a text index on the title and content fields.
+
+   ```javascript
+   db.articles.createIndex({ title: "text", content: "text" });
+   ```
+
+3. **Query Using the Text Index and Sort by Date:** Perform a text search query to find articles that contain specific keywords and sort the results by the date field.
+
+   ```javascript
+   // Query to find articles that contain the keyword "MongoDB" and sort by date in descending order
+   db.articles.find({ $text: { $search: "MongoDB" } }).sort({ date: -1 }).explain("executionStats");
+   ```
+
+***Explanation:***
+
+1. **Insert Documents:** We insert three documents into the articles collection. Each document has a `title`, `content`, and `date` field.
+
+2. **Create a Text Index:** We create a text index on the `title` and `content` fields. This allows MongoDB to perform text search queries on these fields.
+
+3. **Query Using the Text Index and Sort by Date:** We perform a text search query to find articles that contain the keyword "MongoDB" and sort the results by the date field in descending order. The `sort` method is used to specify the sorting order.
+
+**Output of `explain()`**
+
+The output of the explain() method will show that the query used the text index and sorted the results.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "SORT",
+      "sortPattern": { "date": -1 },
+      "inputStage": {
+        "stage": "TEXT",
+        "indexName": "title_text_content_text",
+        "inputStage": {
+          "stage": "FETCH"
+        }
+      }
+    }
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 3,
+    "totalKeysExamined": 3,
+    "totalDocsExamined": 3
+  }
+}
+```
+
+***Explanation of Output:***
+
+- **Winning Plan:** The winning plan includes a `SORT` stage, indicating that the results were sorted by the `date` field.
+
+- **Text Index:** The `TEXT` stage shows that the query used the text index.
+
+- **Execution Stats:** The `executionStats` section provides details about the query execution, including the number of documents returned and examined.
+
+***Consideration:***
+
+- **Sort Order:** When combining text search with sorting, MongoDB may need to perform an in-memory sort if the sort order is not supported by an index. This can impact performance for large result sets.
+
+- **Index Usage:** To optimize performance, consider creating compound indexes that include the text index fields and the sort fields.
+
+***Summary:***
+
+- **Text Index:** Allows you to perform text search queries on string content within your documents.
+
+- **Sorting:** You can combine text search with sorting, but be aware of potential performance impacts.
+
+Text indexes and sorting are powerful features in MongoDB that enable efficient text search and result ordering, making them essential for applications that require full-text search capabilities with sorted results.
+
+### Combining Text Index with Other Indexes in MongoDB
+
+- When you need to perform text search queries and also sort or filter by other fields, you can create compound indexes that include both text index fields and other fields.
+
+- This can help optimize performance by allowing MongoDB to use the index for both the text search and the sorting/filtering operations.
+
+***Example:***
+
+Let's continue with the `articles` collection, which has documents with the fields `title`, `content`, and `date`.
+
+1. Insert Documents: Insert sample documents into the articles collection.
+
+   ```javascript
+   db.articles.insertMany([
+   { title: "Introduction to MongoDB", content: "MongoDB is a NoSQL database that offers high performance and scalability.", date: new Date("2023-01-01") },
+   { title: "Advanced MongoDB Queries", content: "Learn how to perform advanced queries in MongoDB, including text search and aggregation.", date: new Date("2023-02-01") },
+   { title: "MongoDB Indexing", content: "Indexing in MongoDB improves query performance by allowing efficient data retrieval.", date: new Date("2023-03-01") }
+   ]);
+   ```
+
+2. **Create a Compound Text Index:** Create a compound index that includes the text index fields and the date field.
+
+   ```javascript
+   db.articles.createIndex(
+   { title: "text", content: "text", date: 1 }
+   );
+   ```
+
+3. **Query Using the Compound Text Index:** Perform a text search query to find articles that contain specific keywords and sort the results by the date field.
+
+   ```javascript
+   // Query to find articles that contain the keyword "MongoDB" and sort by date in descending order
+   db.articles.find({ $text: { $search: "MongoDB" } }).sort({ date: -1 }).explain("executionStats");
+   ```
+
+***Explanation:***
+
+1. **Insert Documents:** We insert three documents into the `articles` collection. Each document has a `title`, `content`, and `date` field.
+
+2. **Create a Compound Text Index:** We create a compound index that includes the `title` and `content` fields as a text index and the `date` field as a regular index. This allows MongoDB to use the index for both text search and sorting by date.
+
+3. **Query Using the Compound Text Index:** We perform a text search query to find articles that contain the keyword "MongoDB" and sort the results by the date field in descending order. The `sort` method is used to specify the sorting order.
+
+**Output of `explain()`**
+
+The output of the `explain()` method will show that the query used the compound text index and sorted the results.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "SORT",
+      "sortPattern": { "date": -1 },
+      "inputStage": {
+        "stage": "TEXT",
+        "indexName": "title_text_content_text_date_1",
+        "inputStage": {
+          "stage": "FETCH"
+        }
+      }
+    }
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 3,
+    "totalKeysExamined": 3,
+    "totalDocsExamined": 3
+  }
+}
+```
+
+**Explanation of Output:**
+
+- **Winning Plan:** The winning plan includes a `SORT` stage, indicating that the results were sorted by the `date` field.
+
+- **Text Index:** The `TEXT` stage shows that the query used the compound text index.
+
+- **Execution Stats:** The `executionStats` section provides details about the query execution, including the number of documents returned and examined.
+
+***Summary***
+
+- **Compound Text Index:** Allows you to combine text search with sorting or filtering by other fields.
+
+- **Efficiency:** Compound text indexes enable efficient text search queries with sorting or filtering, improving query performance.
+
+By creating compound text indexes, you can optimize your MongoDB queries to handle both text search and additional sorting or filtering requirements, making your application more efficient and responsive.
+
+### Excluding Words in Text Index Queries in MongoDB
+
+MongoDB's text search feature allows you to exclude certain words from your search results using the `-` (minus) operator. This can be useful when you want to filter out documents that contain specific terms.
+
+***Example***
+
+Let's continue with the `articles` collection, which has documents with the fields `title`, `content`, and `date`.
+
+1. **Insert Documents:** Insert sample documents into the articles collection.
+
+   ```javascript
+   db.articles.insertMany([
+   { title: "Introduction to MongoDB", content: "MongoDB is a NoSQL database that offers high performance and scalability.", date: new Date("2023-01-01") },
+   { title: "Advanced MongoDB Queries", content: "Learn how to perform advanced queries in MongoDB, including text search and aggregation.", date: new Date("2023-02-01") },
+   { title: "MongoDB Indexing", content: "Indexing in MongoDB improves query performance by allowing efficient data retrieval.", date: new Date("2023-03-01") },
+   { title: "SQL vs NoSQL", content: "This article compares SQL and NoSQL databases, highlighting their differences and use cases.", date: new Date("2023-04-01") }
+   ]);
+   ```
+
+2. **Create a Text Index:** Create a text index on the `title` and `content` fields.
+
+   ```javascript
+   db.articles.createIndex({ title: "text", content: "text" });
+   ```  
+
+3. **Query Using the Text Index and Exclude Words:** Perform a text search query to find articles that contain specific keywords but exclude certain words.
+
+   ```javascript
+   // Query to find articles that contain the keyword "MongoDB" but exclude the word "NoSQL"
+   db.articles.find({ $text: { $search: "MongoDB -NoSQL" } }).explain("executionStats");
+   ```
+
+**Explanation:**
+
+- **Insert Documents:** We insert four documents into the `articles` collection. Each document has a `title`, `content`, and `date` field.
+  
+- **Create a Text Index:** We create a text index on the `title` and `content` fields. This allows MongoDB to perform text search queries on these fields.
+  
+- **Query Using the Text Index and Exclude Words:** We perform a text search query to find articles that contain the keyword "MongoDB" but exclude the word "NoSQL". The `-` (minus) operator is used to exclude the word "NoSQL" from the search results.
+
+**Output of `explain()`**
+
+The output of the `explain()` method will show that the query used the text index and excluded the specified word.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "TEXT",
+      "indexName": "title_text_content_text",
+      "inputStage": {
+        "stage": "FETCH"
+      }
+    }
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 2,
+    "totalKeysExamined": 2,
+    "totalDocsExamined": 2
+  }
+}
+```
+
+**Explanation Of Output:**
+
+- **Winning Plan:** The winning plan uses the `TEXT` stage, indicating that the query used the text index.
+
+- **Text Index:** The `indexName` field shows the name of the text index used for the query.
+
+- **Execution Stats:** The `executionStats` section provides details about the query execution, including the number of documents returned and examined.
+
+***Summary***
+
+- **Excluding Words:** Use the `-` (minus) operator in text search queries to exclude specific words from the search results.
+
+- **Efficiency:** Excluding words in text search queries allows you to refine your search results and improve the relevance of the returned documents.
+
+By using the `-` (minus) operator in text search queries, you can exclude unwanted terms and obtain more precise search results, making your application more effective and user-friendly.
+
+### Setting the Default Language and Using Weights in MongoDB Text Indexes
+
+MongoDB allows you to set a default language for text indexes and assign weights to different fields to influence the relevance of search results. This can help you fine-tune your text search queries to better match your application's requirements.
+
+**Setting the Default Language:**
+
+By default, MongoDB uses `English` for text indexes. You can change the default language by specifying the `default_language` option when creating the text index.
+
+**Using Weights:**
+
+Weights allow you to assign different levels of importance to different fields in a text index. Fields with higher weights will have a greater impact on the relevance score of search results.
+
+***Example:***
+
+Let's continue with the articles `collection`, which has documents with the fields `title`, `content`, and `date`.
+
+1. **Insert Documents:** Insert sample documents into the articles collection.
+
+   ```javascript
+   db.articles.insertMany([
+   { title: "Introduction to MongoDB", content: "MongoDB is a NoSQL database that offers high performance and scalability.", date: new Date("2023-01-01") },
+   { title: "Advanced MongoDB Queries", content: "Learn how to perform advanced queries in MongoDB, including text search and aggregation.", date: new Date("2023-02-01") },
+   { title: "MongoDB Indexing", content: "Indexing in MongoDB improves query performance by allowing efficient data retrieval.", date: new Date("2023-03-01") },
+   { title: "SQL vs NoSQL", content: "This article compares SQL and NoSQL databases, highlighting their differences and use cases.", date: new Date("2023-04-01") }
+   ]);
+   ```
+
+2. **Create a Text Index with Default Language and Weights:** Create a text index on the title and content fields, set the default language to Spanish, and assign weights to the fields.
+
+   ```javascript
+   db.articles.createIndex(
+   { title: "text", content: "text" },
+   {
+    default_language: "spanish",
+    weights: { title: 10, content: 5 }
+   }
+   );
+   ```
+
+3. **Query Using the Text Index:** Perform a text search query to find articles that contain specific keywords.
+
+   ```javascript
+   // Query to find articles that contain the keyword "MongoDB"
+   db.articles.find({ $text: { $search: "MongoDB" } }).explain("executionStats");
+   ```
+
+**Explanation:**
+
+1. **Insert Documents:** We insert four documents into the `articles` collection. Each document has a `title`, `content`, and `date` field.
+
+2. **Create a Text Index with Default Language and Weights:** We create a text index on the `title` and `content` fields. We set the default language to Spanish and assign weights to the fields (`title` has a weight of 10, and `content` has a weight of 5). This means that matches in the `title` field will be considered more relevant than matches in the `content` field.
+
+3. **Query Using the Text Index:** We perform a text search query to find articles that contain the keyword "MongoDB". The query will use the text index with the specified default language and weights.
+
+**Output Of explain():**
+
+The output of the `explain()` method will show that the query used the text index with the specified default language and weights.
+
+```javascript
+{
+  "queryPlanner": {
+    "winningPlan": {
+      "stage": "TEXT",
+      "indexName": "title_text_content_text",
+      "inputStage": {
+        "stage": "FETCH"
+      }
+    }
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 3,
+    "totalKeysExamined": 3,
+    "totalDocsExamined": 3
+  }
+}
+```
+
+***Explanation Of Output:***
+
+- **Winning Plan:** The winning plan uses the `TEXT` stage, indicating that the query used the text index.
+
+- **Text Index:** The `indexName` field shows the name of the text index used for the query.
+
+- **Execution Stats:** The `executionStats` section provides details about the query execution, including the number of documents returned and examined.
+
+**Summary:**
+
+- **Default Language:** You can set the default language for text indexes using the `default_language` option.
+
+- **Weights:** Assign weights to different fields in a text index to influence the relevance of search results.
+  
+- **Example:** Create a text index on the `title` and `content` fields of the `articles` collection, set the default language to Spanish, and assign weights to the fields.
+
+By setting the default language and using weights in text indexes, you can fine-tune your text search queries to better match your application's requirements, improving the relevance and accuracy of search results.
+
+### Building Indexes in MongoDB
+
+Indexes in MongoDB are special data structures that store a small portion of the collection's data set in an easy-to-traverse form. The index stores the value of a specific field or set of fields, ordered by the value of the field. Indexes support the efficient execution of queries in MongoDB.
+
+**Types of Indexes:**
+
+1. **Single Field Index:** Indexes on a single field.
+2. **Compound Index:** Indexes on multiple fields.
+3. **Multikey Index:** Indexes on array fields.
+4. **Text Index:** Indexes for text search.
+5. **Geospatial Index:** Indexes for geospatial queries.
+6. **Hashed Index:** Indexes that use a hash of the field value.
+
+***Example***
+
+Let's consider a collection named `products` with documents that have the fields `name`, `category`, and `price`.
+
+1. **Insert Documents:** Insert sample documents into the `products` collection.
+
+   ```javascript
+   db.products.insertMany([
+   { name: "Laptop", category: "Electronics", price: 1000 },
+   { name: "Smartphone", category: "Electronics", price: 500 },
+   { name: "Tablet", category: "Electronics", price: 300 },
+   { name: "Headphones", category: "Accessories", price: 100 },
+   { name: "Charger", category: "Accessories", price: 20 }
+   ]);
+   ```
+
+2. **Create a Single Field Index:** Create an index on the `name` field.
+
+   ```javascript
+   db.products.createIndex({ name: 1 });
+   ```
+
+3. **Create a Compound Index:** Create an index on the `category` and `price` fields.
+
+   ```javascript
+   db.products.createIndex({ category: 1, price: -1 });
+   ```
+
+4. **Create a Multikey Index:** Create an index on the `tags` field, which is an array.
+
+   ```javascript
+   db.products.insertMany([
+   { name: "Laptop", tags: ["electronics", "computer"] },
+   { name: "Smartphone", tags: ["electronics", "mobile"] }
+   ]);
+
+   db.products.createIndex({ tags: 1 });
+   ```
+
+5. **Create a Text Index:** Create a text index on the `description` field.
+
+   ```javascript
+   db.products.insertMany([
+   { name: "Laptop", description: "A high-performance laptop for all your computing needs." },
+   { name: "Smartphone", description: "A smartphone with the latest features and technology." }
+   ]);
+
+   db.products.createIndex({ description: "text" });
+   ```
+  
+6. **Create a Geospatial Index:** Create a geospatial index on the `location` field.
+
+   ```javascript
+   db.products.insertMany([
+   { name: "Store1", location: { type: "Point", coordinates: [40.7128, -74.0060] } },
+   { name: "Store2", location: { type: "Point", coordinates: [34.0522, -118.2437] } }
+   ]);
+
+   db.products.createIndex({ location: "2dsphere" });
+   ```
+
+7. **Create a Hashed Index:** Create a hashed index on the `userId` field.
+
+   ```javascript
+   db.products.insertMany([
+   { name: "Laptop", userId: "user123" },
+   { name: "Smartphone", userId: "user456" }
+   ]);
+
+   db.products.createIndex({ userId: "hashed" });
+   ```
+
+**Explanation:**
+
+1. **Insert Documents:** We insert sample documents into the `products` collection.
+
+2. **Single Field Index:** We create an index on the `name` field to support efficient queries on product names.
+
+3. **Compound Index:** We create an index on the `category` and `price` fields to support efficient queries that filter by category and sort by price.
+
+4. **Multikey Index:** We create an index on the `tags` field, which is an array, to support efficient queries on tags.
+
+5. **Text Index:** We create a text index on the `description` field to support text search queries.
+
+6. **Geospatial Index:** We create a geospatial index on the `location` field to support geospatial queries.
+
+7. **Hashed Index:** We create a hashed index on the `userId` field to support efficient equality queries on user IDs.
+
+***Summary***
+
+- **Single Field Index:** Indexes on a single field.
+- **Compound Index:** Indexes on multiple fields.
+- **Multikey Index:** Indexes for text search.
+- **Geospatial Index:** Indexes for geospatial queries.
+- **Hashed Index:** Indexes that use a hash of the field value.
+
+By creating appropriate indexes, you can significantly improve the performance of your MongoDB queries, making your application more efficient and responsive.
+
+### Importing JSON to MongoDB Shell
+
+You can import JSON data into MongoDB using the `mongoimport` tool, which is a part of the MongoDB Database Tools. This tool allows you to import data from JSON, CSV, or TSV files into a MongoDB collection.
+
+**Example:**
+
+Let's assume you have a JSON file named `products.json` with the following content:
+
+```javascript
+[
+  { "name": "Laptop", "category": "Electronics", "price": 1000 },
+  { "name": "Smartphone", "category": "Electronics", "price": 500 },
+  { "name": "Tablet", "category": "Electronics", "price": 300 },
+  { "name": "Headphones", "category": "Accessories", "price": 100 },
+  { "name": "Charger", "category": "Accessories", "price": 20 }
+]
+```
+
+***Steps to Import JSON Data:***
+
+1. **Open Command Prompt:** Open the Command Prompt or Terminal on your machine.
+
+2. **Run `mongoimport` Command:** Use the `mongoimport` command to import the JSON file into a MongoDB collection.
+
+   ```javascript
+   mongoimport --db mydatabase --collection products --file products.json --jsonArray
+   ```
+
+**Explanation:**
+
+- `--db mydatabase:` Specifies the database to import the data into (mydatabase).
+
+- `--collection products:` Specifies the collection to import the data into (products).
+
+- `--file products.json:` Specifies the path to the JSON file (products.json).
+
+- `--jsonArray:` Indicates that the input file contains an array of JSON documents.
+
+**Verifying the Import:**
+
+After running the `mongoimport` command, you can verify that the data has been imported successfully by querying the products collection in the MongoDB shell.
+
+1. **Open MongoDB Shell:** Open the MongoDB shell by running the `mongosh` command.
+
+   ```javascript
+   mongosh
+   ```
+
+2. **Switch to the Database:** Switch to the database where the data was imported.
+
+   ```javascript
+   use mydatabase
+   ```
+
+3. **Query the Collection:** Query the products collection to verify the imported data.
+
+   ```javascript
+   db.products.find().pretty()
+   ```
+
+***Expected Output:***
+
+The output should display the documents imported from the JSON file:
+
+```javascript
+{
+  "_id": ObjectId("..."),
+  "name": "Laptop",
+  "category": "Electronics",
+  "price": 1000
+}
+{
+  "_id": ObjectId("..."),
+  "name": "Smartphone",
+  "category": "Electronics",
+  "price": 500
+}
+{
+  "_id": ObjectId("..."),
+  "name": "Tablet",
+  "category": "Electronics",
+  "price": 300
+}
+{
+  "_id": ObjectId("..."),
+  "name": "Headphones",
+  "category": "Accessories",
+  "price": 100
+}
+{
+  "_id": ObjectId("..."),
+  "name": "Charger",
+  "category": "Accessories",
+  "price": 20
+}
+```
+
+**Summary:**
+
+- **`mongoimport` Tool:** Use the mongoimport tool to import JSON data into MongoDB.
+
+- **Command:** Run the `mongoimport` command with appropriate options to specify the database, collection, and JSON file.
+
+- **Verification:** Verify the imported data by querying the collection in the MongoDB shell.
+
+By following these steps, you can easily import JSON data into MongoDB and ensure that it has been imported correctly.
+
+### More Details
+
+For more information, refer to the official MongoDB documentation:
+
+- **Partial Filter Expressions:** [Partial Filter Expressions](https://docs.mongodb.com/manual/core/index-partial/)
+- **Supported Default Languages:** [Text Search Languages](https://docs.mongodb.com/manual/reference/text-search-languages/#text-search-languages)
+- **Using Different Languages in the Same Index:** [Create a Text Index for a Collection in Multiple Languages](https://docs.mongodb.com/manual/tutorial/specify-language-for-text-index/#create-a-text-index-for-a-collection-in-multiple-languages)

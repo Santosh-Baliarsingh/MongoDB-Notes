@@ -127,6 +127,21 @@
     - [Finding Places Inside a Certain Area With `$geoWithin`](#finding-places-inside-a-certain-area-with-geowithin)
     - [Finding Out if a User is Inside a Specific Area with `$geoIntersects`](#finding-out-if-a-user-is-inside-a-specific-area-with-geointersects)
     - [Finding Places Within Certain Radius With `$centerSphere`](#finding-places-within-certain-radius-with-centersphere)
+  - [5. Understanding Aggregation Framework](#5-understanding-aggregation-framework)
+    - [Transforming BirthDate Using `$dateToString`](#transforming-birthdate-using-datetostring)
+    - [Transforming BirthDate Using `$convert`](#transforming-birthdate-using-convert)
+    - [Understanding `$isoWeekYear` Operator](#understanding-isoweekyear-operator)
+    - [`$group` Vs `$project`](#group-vs-project)
+    - [Pushing Elements Into Newly Created Arrays](#pushing-elements-into-newly-created-arrays)
+    - [Understanding `$unwind` Stage](#understanding-unwind-stage)
+    - [Eliminating Duplicate Values](#eliminating-duplicate-values)
+    - [Using Projection With Arrays](#using-projection-with-arrays)
+    - [Getting The Length Of An Array](#getting-the-length-of-an-array)
+    - [Using `$filter` Operator](#using-filter-operator)
+    - [Applying Multiple Operations To Array](#applying-multiple-operations-to-array)
+    - [Understanding `$bucket`](#understanding-bucket)
+    - [Writing Pipeline Results Into a New Collection](#writing-pipeline-results-into-a-new-collection)
+    - [Working With `$geoNear` Stage](#working-with-geonear-stage)
 
 ## What is MongoDB?
 
@@ -5499,3 +5514,1661 @@ The output will include all documents from the `places` collection that have a `
 - **Geospatial Queries:** [official MongoDB documentation](https://docs.mongodb.com/manual/geospatial-queries/)
   
 - **Geospatial Query Operators:** [Geospatial Query Operators](https://docs.mongodb.com/manual/reference/operator/query-geospatial/).
+
+## 5. Understanding Aggregation Framework
+
+**What is Aggregation Framework in MongoDB:**
+
+- The Aggregation Framework in MongoDB is a powerful tool for performing data processing and transformation operations on collections of documents.
+  
+- It allows you to perform complex queries and transformations on your data in a pipeline fashion, where each stage of the pipeline processes the input and passes the result to the next stage.
+
+**Key Concepts:**
+
+1. **Pipeline:** A sequence of stages where each stage transforms the documents as they pass through.
+
+2. **Stages:** Each stage in the pipeline performs an operation on the input documents. Common stages include:
+
+   - `$match:` Filters documents to pass only those that match the specified condition(s).
+  
+   - `$group:` Groups input documents by a specified identifier expression and applies the accumulator expressions.
+  
+   - `$project:` Reshapes each document in the stream, such as by adding, removing, or renaming fields.
+  
+   - `$sort:` Sorts the documents.
+
+   - `$limit:` Limits the number of documents.
+  
+   - `$skip:` Skips over a specified number of documents.
+  
+   - `$unwind:` Deconstructs an array field from the input documents to output a document for each element.
+
+**Use Cases:**
+
+- Data transformation and reshaping.
+  
+- Calculating aggregated values like sums, averages, and counts.
+  
+- Filtering and sorting data.
+  
+- Joining data from multiple collections.
+
+**Example:**
+
+We'll use a collection named `orders` with the following documents:
+
+```javascript
+[
+  { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": ["item1", "item2"] },
+  { "_id": 2, "cust_id": "B456", "status": "B", "amount": 200, "items": ["item3"] },
+  { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] },
+  { "_id": 4, "cust_id": "C789", "status": "C", "amount": 300, "items": ["item2", "item3"] },
+  { "_id": 5, "cust_id": "A123", "status": "B", "amount": 50, "items": ["item4"] }
+]
+```
+
+***Common MongoDB aggregation stages with examples***
+
+1. `$match:`***Filters documents to pass only those that match the specified condition(s).***
+
+   ```javascript
+   db.orders.aggregate([
+   { $match: { status: "A" } }
+   ])
+   ```
+
+   **Explanation:** This stage filters documents where the `status` is "A".
+
+   **Expected Output:**
+
+   ```javascript
+   [
+    { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": ["item1", "item2"] },
+    { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] }
+   ]
+   ```
+
+2. `$group:`***Groups input documents by a specified identifier expression and applies the accumulator expressions.***
+
+   ```javascript
+    db.orders.aggregate([
+    { $group: { _id: "$cust_id", totalAmount: { $sum: "$amount" } } }
+    ])
+   ```
+
+   **Explanation:**This stage groups documents by `cust_id` and calculates the total amount for each customer.
+
+   **Expected Output:**
+
+   ```javascript
+   [
+   { "_id": "A123", "totalAmount": 300 },
+   { "_id": "B456", "totalAmount": 200 },
+   { "_id": "C789", "totalAmount": 300 }
+   ]
+   ```
+
+3. `$sort:`***Sorts all input documents and returns them in the specified order.***
+
+   ```javascript
+   db.orders.aggregate([
+   { $sort: { amount: -1 } }
+   ])
+   ```
+
+   **Explanation:** This stage sorts documents by the `amount` field in descending order.
+
+   ```javascript
+   [
+   { "_id": 4, "cust_id": "C789", "status": "C", "amount": 300, "items": ["item2", "item3"] },
+   { "_id": 2, "cust_id": "B456", "status": "B", "amount": 200, "items": ["item3"] },
+   { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] },
+   { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": ["item1", "item2"] },
+   { "_id": 5, "cust_id": "A123", "status": "B", "amount": 50, "items": ["item4"] }
+   ]
+   ```
+
+4. `$project:`***Passes along the documents with only the specified fields.***
+
+   ```javascript
+   db.orders.aggregate([
+   { $project: { cust_id: 1, amount: 1, _id: 0 } }
+   ])
+   ```
+
+   **Explanation:** This stage includes only the `cust_id` and `amount` fields in the output documents.
+
+   **Expected Output:**
+
+   ```javascript
+   [
+   { "cust_id": "A123", "amount": 100 },
+   { "cust_id": "B456", "amount": 200 },
+   { "cust_id": "A123", "amount": 150 },
+   { "cust_id": "C789", "amount": 300 },
+   { "cust_id": "A123", "amount": 50 }
+   ]
+   ```
+
+5. `$unwind:`***Deconstructs an array field from the input documents to output a document for each element.***
+
+   ```javascript
+   db.orders.aggregate([
+   { $unwind: "$items" }
+   ])
+   ```
+  
+   **Explanation:** This stage outputs a document for each element in the `items` array.
+
+   **Expected Output:**
+
+   ```javascript
+   [
+   { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": "item1" },
+   { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": "item2" },
+   { "_id": 2, "cust_id": "B456", "status": "B", "amount": 200, "items": "item3" },
+   { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": "item1" },
+   { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": "item4" },
+   { "_id": 4, "cust_id": "C789", "status": "C", "amount": 300, "items": "item2" },
+   { "_id": 4, "cust_id": "C789", "status": "C", "amount": 300, "items": "item3" },
+   { "_id": 5, "cust_id": "A123", "status": "B", "amount": 50, "items": "item4" }
+   ]
+   ```
+
+6. `$limit:`***Limits the number of documents passed to the next stage in the pipeline.***
+
+   ```javascript
+   db.orders.aggregate([
+   { $limit: 3 }
+   ])
+   ```
+
+   **Explanation:** This stage limits the output to 3 documents.
+
+   **Expected Output:**
+
+   ```javascript
+   [
+   { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100,  "items": ["item1", "item2"] },
+   { "_id": 2, "cust_id": "B456", "status": "B", "amount": 200, "items": ["item3"] },
+   { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] }
+   ]
+   ```
+
+7. `$skip:`***Skips over a specified number of documents.***
+
+   ```javascript
+   db.orders.aggregate([
+    { $skip: 2 }
+   ])
+   ```
+
+   **Explanation:** This stage skips the first 2 documents.
+
+   **Expected Output:**
+
+   ```javascript
+   [
+   { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] },
+   { "_id": 4, "cust_id": "C789", "status": "C", "amount": 300, "items": ["item2", "item3"] },
+   { "_id": 5, "cust_id": "A123", "status": "B", "amount": 50, "items": ["item4"] }
+   ]
+   ```
+
+8. `$lookup:`***Performs a left outer join to another collection in the same database to filter in documents from the "joined" collection for processing.***
+
+   ```javascript
+   db.orders.aggregate([
+   {
+    $lookup: {
+      from: "customers",
+      localField: "cust_id",
+      foreignField: "cust_id",
+      as: "customer_info"
+    }
+   }
+   ])
+   ```
+
+   **Explanation:** This stage joins the `orders` collection with the `customers` collection based on the `cust_id` field.
+
+   **Expected Output:**
+
+   ```javascript
+   [
+   {
+    "_id": 1,
+    "cust_id": "A123",
+    "status": "A",
+    "amount": 100,
+    "items": ["item1", "item2"],
+    "customer_info": [
+      { "cust_id": "A123", "name": "Alice", "address": "123 Main St" }
+    ]
+   },
+   {
+    "_id": 2,
+    "cust_id": "B456",
+    "status": "B",
+    "amount": 200,
+    "items": ["item3"],
+    "customer_info": [
+      { "cust_id": "B456", "name": "Bob", "address": "456 Elm St" }
+    ]
+   },
+   {
+    "_id": 3,
+    "cust_id": "A123",
+    "status": "A",
+    "amount": 150,
+    "items": ["item1", "item4"],
+    "customer_info": [
+      { "cust_id": "A123", "name": "Alice", "address": "123 Main St" }
+    ]
+   },
+   {
+    "_id": 4,
+    "cust_id": "C789",
+    "status": "C",
+    "amount": 300,
+    "items": ["item2", "item3"],
+    "customer_info": [
+      { "cust_id": "C789", "name": "Charlie", "address": "789 Oak St" }
+    ]
+   },
+   {
+    "_id": 5,
+    "cust_id": "A123",
+    "status": "B",
+    "amount": 50,
+    "items": ["item4"],
+    "customer_info": [
+      { "cust_id": "A123", "name": "Alice", "address": "123 Main St" }
+    ]
+   }
+   ]
+   ```
+
+9. `$addFields:`***Adds new fields to documents.***
+
+   ```javascript
+   db.orders.aggregate([
+   { $addFields: { discount: { $multiply: ["$amount", 0.1] } } }
+   ])
+   ```
+
+   **Explanation:** This stage adds a `discount` field to each document, which is 10% of the `amount`.
+
+   **Expected Output:**
+
+   ```javascript
+   [
+   { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": ["item1", "item2"], "discount": 10 },
+   { "_id": 2, "cust_id": "B456", "status": "B", "amount": 200, "items": ["item3"], "discount": 20 },
+   { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"], "discount": 15 },
+   { "_id": 4, "cust_id": "C789", "status": "C", "amount": 300, "items": ["item2", "item3"], "discount": 30 },
+   { "_id": 5, "cust_id": "A123", "status": "B", "amount": 50, "items": ["item4"], "discount": 5 }
+   ]
+   ```
+
+10. `$count:`***Counts the number of documents that are input to the stage.***
+
+    ```javascript
+    db.orders.aggregate([
+    { $count: "totalOrders" }
+    ])
+    ```
+
+    **Explanation:**This stage counts the total number of documents and outputs a document with the count.
+
+    **Expected Output:**
+
+    ```javascript
+    [
+    { "totalOrders": 5 }
+    ]
+    ```
+
+11. `$facet:`***Processes multiple aggregation pipelines within a single stage on the same set of input documents.***
+
+    ```javascript
+    db.orders.aggregate([
+    {
+     $facet: {
+      "groupByStatus": [
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+      ],
+      "totalAmount": [
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ]
+     }
+    }
+    ])
+    ```
+
+    **Explanation:** This stage runs two pipelines: one groups documents by status and counts them, and the other calculates the total amount.
+
+    **Expected Output:**
+
+    ```javascript
+    [
+    {
+    "groupByStatus": [
+      { "_id": "A", "count": 2 },
+      { "_id": "B", "count": 2 },
+      { "_id": "C", "count": 1 }
+     ],
+    "totalAmount": [
+      { "_id": null, "total": 800 }
+     ]
+    }
+    ]
+    ```
+
+12. `$out:`***Writes the resulting documents of the aggregation pipeline to a specified collection.***
+
+    ```javascript
+    db.orders.aggregate([
+    { $match: { status: "A" } },
+    { $out: "filtered_orders" }
+    ])
+    ```
+
+    **Explanation:**  This stage writes the documents with `status` "A" to a new collection named `filtered_orders`.
+
+    **Expected Output:**
+
+    ```javascript
+    [
+    { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": ["item1", "item2"] },
+    { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] }
+    ]
+    ```
+
+13. `$replaceRoot:`***Replaces the input document with the specified document.***
+
+    ```javascript
+    db.orders.aggregate([
+    { $replaceRoot: { newRoot: "$items" } }
+    ])
+    ```
+
+    **Explanation:** This stage replaces the input document with the `items` array.
+
+    **Expected Output:**
+
+    ```javascript
+    [
+    ["item1", "item2"],
+    ["item3"],
+    ["item1", "item4"],
+    ["item2", "item3"],
+    ["item4"]
+    ]
+    ```
+
+14. `$sample:`***Randomly selects the specified number of documents from its input.***
+
+    ```javascript
+    db.orders.aggregate([
+    { $sample: { size: 2 } }
+    ])
+    ```
+
+    **Explanation:** This stage randomly selects 2 documents from the input.
+
+    **Expected Output:**
+
+    ```javascript
+    [
+    { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] },
+    { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": ["item1", "item2"] }
+    ]
+    ```
+
+15. `$redact:`***Restricts the content of the documents based on information stored in the documents themselves.***
+
+    ```javascript
+    db.orders.aggregate([
+    { $redact: { $cond: { if: { $eq: ["$status", "A"] }, then: "$$KEEP", else: "$$PRUNE" } } }
+    ])
+    ```
+
+    **Explanation:** This stage keeps documents with `status` "A" and prunes others.
+
+    **Expected Output:**
+
+    ```javascript
+    [
+    { "_id": 1, "cust_id": "A123", "status": "A", "amount": 100, "items": ["item1", "item2"] },
+    { "_id": 3, "cust_id": "A123", "status": "A", "amount": 150, "items": ["item1", "item4"] }
+    ]
+    ```
+
+### Transforming BirthDate Using `$dateToString`
+
+We'll use the `$project` stage to transform the `birthdate` field into a more readable format.
+
+**Example:**
+
+Let's assume we have a collection named `users` with the following documents:
+
+```javascript
+db.users.insertMany([
+  { "_id": 1, "name": "Alice", "birthdate": ISODate("1990-01-01T00:00:00Z") },
+  { "_id": 2, "name": "Bob", "birthdate": ISODate("1985-05-15T00:00:00Z") },
+  { "_id": 3, "name": "Charlie", "birthdate": ISODate("1992-12-20T00:00:00Z") }
+])
+```
+
+**Aggregation Pipeline:**
+
+We will use the `$project` stage to transform the `birthdate` field into a string format `YYYY-MM-DD`.
+
+```javascript
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      birthdate: {
+        $dateToString: { format: "%Y-%m-%d", date: "$birthdate" }
+      }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$project:** This stage reshapes each document in the stream, including only the `name` and a transformed `birthdate` field.
+  
+- **$dateToString:** This operator converts the `birthdate` field to a string format `YYYY-MM-DD`.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 1, "name": "Alice", "birthdate": "1990-01-01" },
+  { "_id": 2, "name": "Bob", "birthdate": "1985-05-15" },
+  { "_id": 3, "name": "Charlie", "birthdate": "1992-12-20" }
+]
+```
+
+### Transforming BirthDate Using `$convert`
+
+Using `$convert` is another way to transform the birthdate field, but it serves a different purpose. `$convert` is used to change the data type of a field.whereas `$dateToString` is specifically designed to format dates as strings.
+
+**Example:**
+
+```javascript
+db.users.insertMany([
+  { "_id": 1, "name": "Alice", "birthdate": "1990-01-01" },
+  { "_id": 2, "name": "Bob", "birthdate": "1985-05-15" },
+  { "_id": 3, "name": "Charlie", "birthdate": "1992-12-20" }
+])
+```
+
+**Aggregation Pipeline Using `$convert`:**
+
+We will use the `$project` stage to convert the `birthdate` field from a string to a date.
+
+```javascript
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      birthdate: {
+        $convert: { input: "$birthdate", to: "date" }
+      }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$project:** This stage reshapes each document in the stream, including only the `name` and a converted `birthdate` field.
+
+- **$convert:** This operator converts the `birthdate` field from a string to a date object.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 1, "name": "Alice", "birthdate": ISODate("1990-01-01T00:00:00Z") },
+  { "_id": 2, "name": "Bob", "birthdate": ISODate("1985-05-15T00:00:00Z") },
+  { "_id": 3, "name": "Charlie", "birthdate": ISODate("1992-12-20T00:00:00Z") }
+]
+```
+
+***When to Use $convert:***
+
+- **$convert** is useful when you need to change the data type of a field, for example, converting a string to a date or a number to a string.
+
+***When to Use $dateToString:***
+
+- **$dateToString** is specifically for formatting date fields into string representations.
+
+### Understanding `$isoWeekYear` Operator
+
+The `$isoWeekYear` operator in MongoDB is used to extract the ISO week-numbering year from a date. The ISO week-numbering year is the year that contains the Thursday of the week.
+
+**Example:**
+
+Let's assume we have a collection named `events` with the following documents:
+
+```javascript
+db.events.insertMany([
+  { "_id": 1, "name": "Event A", "date": ISODate("2023-01-01T00:00:00Z") },
+  { "_id": 2, "name": "Event B", "date": ISODate("2023-06-15T00:00:00Z") },
+  { "_id": 3, "name": "Event C", "date": ISODate("2023-12-31T00:00:00Z") }
+])
+```
+
+**Aggregation Pipeline:**
+
+We will use the `$project` stage to add a new field `isoWeekYear` that contains the ISO week-numbering year of the `date` field.
+
+```javascript
+db.events.aggregate([
+  {
+    $project: {
+      name: 1,
+      date: 1,
+      isoWeekYear: { $isoWeekYear: "$date" }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$project:** This stage reshapes each document in the stream, including only the name, date, and a new field `isoWeekYear`.
+
+- **$isoWeekYear:** This operator extracts the ISO week-numbering year from the `date` field.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 1, "name": "Event A", "date": ISODate("2023-01-01T00:00:00Z"), "isoWeekYear": 2022 },
+  { "_id": 2, "name": "Event B", "date": ISODate("2023-06-15T00:00:00Z"), "isoWeekYear": 2023 },
+  { "_id": 3, "name": "Event C", "date": ISODate("2023-12-31T00:00:00Z"), "isoWeekYear": 2023 }
+]
+```
+
+### `$group` Vs `$project`
+
+The `$group` and `$project` stages in MongoDB's aggregation framework serve different purposes. Here's a detailed comparison:
+
+**`$group` Operator:**
+
+- **Purpose:** The `$group` stage is used to group documents by a specified key and perform aggregate operations like sum, average, count, etc., on the grouped data.
+
+**Syntax:**
+
+```javascript
+{
+  $group: {
+    _id: <expression>, // Group by this field
+    <field1>: { <accumulator1>: <expression1> },
+    <field2>: { <accumulator2>: <expression2> },
+    // Additional fields and accumulators
+  }
+}
+```
+
+**Example:**
+
+```javascript
+db.sales.aggregate([
+  {
+    $group: {
+      _id: "$productId",
+      totalSales: { $sum: "$amount" },
+      averageSales: { $avg: "$amount" }
+    }
+  }
+])
+```
+
+**Explanation:** This groups the documents by `productId` and calculates the total and average sales for each product.
+
+**`$project` Operator:**
+
+- **Purpose:** The `$project` stage is used to include, exclude, or add new fields to the documents in the aggregation pipeline. It reshapes each document in the stream.
+
+**Syntax:**
+
+```javascript
+{
+  $project: {
+    <field1>: <expression1>,
+    <field2>: <expression2>,
+    // Additional fields and expressions
+  }
+}
+```
+
+**Example:**
+
+```javascript
+db.users.aggregate([
+  {
+    $project: {
+      name: 1,
+      birthdate: 1,
+      birthYear: { $year: "$birthdate" }
+    }
+  }
+])
+```
+
+**Explanation:** This includes the `name` and `birthdate` fields in the output and adds a new field `birthYear` that contains the year extracted from the `birthdate`.
+
+**Key Differences:**
+
+- **Grouping vs. Reshaping:**
+  
+  - `$group` is used for grouping documents and performing aggregate calculations.
+  
+  - `$project` is used for reshaping documents by including, excluding, or adding new fields.
+
+- **Output Structure:**
+  
+  - `$group` changes the structure of the output documents based on the grouping key.
+  
+  - `$project` maintains the structure of the input documents but can modify the fields.
+
+- **Use Cases:**
+  
+  - Use `$group` when you need to aggregate data, such as summing sales or counting occurrences.
+  
+  - Use `$project` when you need to transform the data, such as formatting dates or computing new fields.
+
+**Combined Example:**
+
+You can use both `$group` and `$project` in the same aggregation pipeline to first group the data and then reshape the grouped results.
+
+```javascript
+db.sales.aggregate([
+  {
+    $group: {
+      _id: "$productId",
+      totalSales: { $sum: "$amount" },
+      averageSales: { $avg: "$amount" }
+    }
+  },
+  {
+    $project: {
+      productId: "$_id",
+      totalSales: 1,
+      averageSales: 1,
+      _id: 0
+    }
+  }
+])
+```
+
+**Explanation:** This pipeline first groups the sales by `productId` and calculates the total and average sales. Then, it reshapes the output to include `productId`, `totalSales`, and `averageSales`, while excluding the `_id` field.
+
+### Pushing Elements Into Newly Created Arrays
+
+To push elements into a newly created array in MongoDB, you can use the `$push` operator within the `$group` stage. This is useful when you want to collect values from multiple documents into an array for each group.
+
+**Example:**
+
+Let's assume we have a collection named `sales` with the following documents:
+
+```javascript
+db.sales.insertMany([
+  { "_id": 1, "productId": "A", "amount": 100, "date": ISODate("2023-01-01T00:00:00Z") },
+  { "_id": 2, "productId": "A", "amount": 150, "date": ISODate("2023-01-02T00:00:00Z") },
+  { "_id": 3, "productId": "B", "amount": 200, "date": ISODate("2023-01-01T00:00:00Z") },
+  { "_id": 4, "productId": "B", "amount": 250, "date": ISODate("2023-01-03T00:00:00Z") }
+])
+```
+
+**Aggregation Pipeline:**
+
+We will use the `$group` stage to group the documents by `productId` and push the `amount` and date fields into a newly created array called `salesDetails`.
+
+```javascript
+db.sales.aggregate([
+  {
+    $group: {
+      _id: "$productId",
+      totalSales: { $sum: "$amount" },
+      averageSales: { $avg: "$amount" },
+      salesDetails: {
+        $push: {
+          amount: "$amount",
+          date: "$date"
+        }
+      }
+    }
+  },
+  {
+    $project: {
+      productId: "$_id",
+      totalSales: 1,
+      averageSales: 1,
+      salesDetails: 1,
+      _id: 0
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$group:** This stage groups the documents by `productId` and calculates the total and average sales. It also creates a new array `salesDetails` that contains the `amount` and `date` fields for each sale.
+  
+- `_id:` "$productId": Groups by productId.
+  
+- `totalSales: { $sum: "$amount" }:` Calculates the total sales for each product.
+  
+- `averageSales: { $avg: "$amount" }:` Calculates the average sales for each product.
+  
+- `salesDetails: { $push: { amount: "$amount", date: "$date" } }:` Pushes the amount and date fields into the salesDetails array.
+
+- **Project:** This stage reshapes the output to include `productId`, `totalSales`, `averageSales`, and `salesDetails`, while excluding the `_id` field.
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "productId": "A",
+    "totalSales": 250,
+    "averageSales": 125,
+    "salesDetails": [
+      { "amount": 100, "date": ISODate("2023-01-01T00:00:00Z") },
+      { "amount": 150, "date": ISODate("2023-01-02T00:00:00Z") }
+    ]
+  },
+  {
+    "productId": "B",
+    "totalSales": 450,
+    "averageSales": 225,
+    "salesDetails": [
+      { "amount": 200, "date": ISODate("2023-01-01T00:00:00Z") },
+      { "amount": 250, "date": ISODate("2023-01-03T00:00:00Z") }
+    ]
+  }
+]
+```
+
+### Understanding `$unwind` Stage
+
+- The `$unwind` stage in MongoDB's aggregation framework is used to deconstruct an array field from the input documents to output a document for each element of the array.
+
+- This is useful when you need to work with individual elements of an array as separate documents.
+
+**How $unwind Works:**
+
+- **Input:** A document with an array field.
+
+- **Output:** Multiple documents, each containing one element from the array field.
+
+**Syntax:**
+
+```javascript
+{
+  $unwind: {
+    path: <arrayFieldPath>,
+    includeArrayIndex: <string>, // Optional
+    preserveNullAndEmptyArrays: <boolean> // Optional
+  }
+}
+```
+
+- **path:** The field path to the array that you want to unwind.
+
+- **includeArrayIndex:** Optional. The name of a new field to hold the array index of the unwound element.
+
+- **preserveNullAndEmptyArrays:** Optional. If true, if the array is null, missing, or empty, the input document is included in the output with the array field set to null.
+
+**Example:**
+
+Let's assume we have a collection named `orders` with the following documents:
+
+```javascript
+db.orders.insertMany([
+  { "_id": 1, "customer": "Alice", "items": ["apple", "banana", "orange"] },
+  { "_id": 2, "customer": "Bob", "items": ["grape", "melon"] },
+  { "_id": 3, "customer": "Charlie", "items": [] }
+])
+```
+
+**Aggregation Pipeline:**
+
+We will use the `$unwind` stage to deconstruct the `items` array field.
+
+```javascript
+db.orders.aggregate([
+  {
+    $unwind: "$items"
+  }
+])
+```
+
+***Explanation:***
+
+**$unwind:** This stage deconstructs the `items` array field, outputting a document for each element in the array.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 1, "customer": "Alice", "items": "apple" },
+  { "_id": 1, "customer": "Alice", "items": "banana" },
+  { "_id": 1, "customer": "Alice", "items": "orange" },
+  { "_id": 2, "customer": "Bob", "items": "grape" },
+  { "_id": 2, "customer": "Bob", "items": "melon" }
+]
+```
+
+**Using Optional Parameters:**
+
+You can use the optional parameters `includeArrayIndex` and `preserveNullAndEmptyArrays` to customize the behavior of `$unwind`.
+
+**Example:**
+
+```javascript
+db.orders.aggregate([
+  {
+    $unwind: {
+      path: "$items",
+      includeArrayIndex: "itemIndex",
+      preserveNullAndEmptyArrays: true
+    }
+  }
+])
+```
+
+***Explanation:***
+
+- **path:** Specifies the items array field to unwind.
+
+- **includeArrayIndex:** Adds a new field itemIndex that contains the index of the unwound element.
+
+- **preserveNullAndEmptyArrays:** If true, includes documents with null or empty arrays in the output.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 1, "customer": "Alice", "items": "apple", "itemIndex": 0 },
+  { "_id": 1, "customer": "Alice", "items": "banana", "itemIndex": 1 },
+  { "_id": 1, "customer": "Alice", "items": "orange", "itemIndex": 2 },
+  { "_id": 2, "customer": "Bob", "items": "grape", "itemIndex": 0 },
+  { "_id": 2, "customer": "Bob", "items": "melon", "itemIndex": 1 },
+  { "_id": 3, "customer": "Charlie", "items": null, "itemIndex": null }
+]
+```
+
+### Eliminating Duplicate Values
+
+To eliminate duplicate values in MongoDB, you can use the `$group` stage in the aggregation pipeline along with the
+`$first` or `$addToSet` operators. Here are a few methods to achieve this:
+
+**Method 1: Using `$group` and `$first`**
+
+This method groups documents by a specified key and uses the `$first` operator to retain the first document in each group.
+
+**Example:**
+
+Let's assume we have a collection named `users` with the following documents:
+
+```javascript
+db.users.insertMany([
+  { "_id": 1, "name": "Alice", "email": "alice@example.com" },
+  { "_id": 2, "name": "Bob", "email": "bob@example.com" },
+  { "_id": 3, "name": "Alice", "email": "alice@example.com" }
+])
+```
+
+**Aggregation Pipeline:**
+
+We will use the `$group` stage to eliminate duplicate documents based on the `email` field.
+
+```javascript
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$email",
+      name: { $first: "$name" },
+      email: { $first: "$email" }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$group:** Groups documents by the `email` field.
+
+- **$first:** Retains the first document in each group for the `name` and `email` fields.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": "alice@example.com", "name": "Alice", "email": "alice@example.com" },
+  { "_id": "bob@example.com", "name": "Bob", "email": "bob@example.com" }
+]
+```
+
+**Method 2: Using `$group` and `$addToSet`:**
+
+This method groups documents by a specified key and uses the `$addToSet` operator to create an array of unique values.
+
+**Example:**
+
+```javascript
+db.users.insertMany([
+  { "_id": 1, "name": "Alice", "email": "alice@example.com" },
+  { "_id": 2, "name": "Bob", "email": "bob@example.com" },
+  { "_id": 3, "name": "Alice", "email": "alice@example.com" }
+])
+```
+
+**Aggregation Pipeline:**
+
+We will use the `$group` stage to eliminate duplicate documents based on the `email` field and create an array of unique names.
+
+```javascript
+db.users.aggregate([
+  {
+    $group: {
+      _id: "$email",
+      names: { $addToSet: "$name" },
+      email: { $first: "$email" }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$group:** Groups documents by the `email` field.
+
+- **$addToSet:** Creates an array of unique `name` values for each group.
+
+- **$first:** Retains the first `email` value in each group.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": "alice@example.com", "names": ["Alice"], "email": "alice@example.com" },
+  { "_id": "bob@example.com", "names": ["Bob"], "email": "bob@example.com" }
+]
+```
+
+**Method 3: Using `distinct` Command:**
+
+The `distinct` command can be used to retrieve distinct values for a specified field.
+
+**Example:**
+
+Let's assume we have a collection named `users` with the following documents:
+
+```javascript
+db.users.insertMany([
+  { "_id": 1, "name": "Alice", "email": "alice@example.com" },
+  { "_id": 2, "name": "Bob", "email": "bob@example.com" },
+  { "_id": 3, "name": "Alice", "email": "alice@example.com" }
+])
+```
+
+We will use the `distinct` command to retrieve unique email addresses.
+
+```javascript
+db.users.distinct("email")
+```
+
+**Expected Output:**
+
+```javascript
+[
+  "alice@example.com",
+  "bob@example.com"
+]
+```
+
+### Using Projection With Arrays
+
+- In MongoDB, projection is used to specify which fields to include or exclude in the returned documents.
+
+- When working with arrays, you can use projection to include or exclude specific elements of the array or to reshape the array.
+
+**Example: Including Specific Fields in an Array:**
+
+Let's assume we have a collection named `orders` with the following documents:
+
+```javascript
+db.orders.insertMany([
+  {
+    "_id": 1,
+    "customer": "Alice",
+    "items": [
+      { "product": "apple", "quantity": 10, "price": 1.5 },
+      { "product": "banana", "quantity": 5, "price": 1.0 }
+    ]
+  },
+  {
+    "_id": 2,
+    "customer": "Bob",
+    "items": [
+      { "product": "grape", "quantity": 20, "price": 2.0 },
+      { "product": "melon", "quantity": 2, "price": 3.0 }
+    ]
+  }
+])
+```
+
+**Projection to Include Specific Fields in an Array:**
+
+We will use projection to include only the `product` and `quantity` fields in the `items` array.
+
+```javascript
+db.orders.find(
+  {},
+  {
+    customer: 1,
+    "items.product": 1,
+    "items.quantity": 1
+  }
+)
+```
+
+**Explanation:**
+
+- **customer: 1:** Includes the customer field in the output.
+
+- **"items.product": 1:** Includes the product field within the items array.
+
+- **"items.quantity": 1:** Includes the quantity field within the items array.
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "_id": 1,
+    "customer": "Alice",
+    "items": [
+      { "product": "apple", "quantity": 10 },
+      { "product": "banana", "quantity": 5 }
+    ]
+  },
+  {
+    "_id": 2,
+    "customer": "Bob",
+    "items": [
+      { "product": "grape", "quantity": 20 },
+      { "product": "melon", "quantity": 2 }
+    ]
+  }
+]
+```
+
+**Projection to Exclude Specific Fields in an Array:**
+
+We will use projection to exclude the `price` field in the `items` array.
+
+```javascript
+db.orders.find(
+  {},
+  {
+    "items.price": 0
+  }
+)
+```
+
+**Explanation:**
+
+- **"items.price": 0:** Excludes the `price` field within the `items` array.
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "_id": 1,
+    "customer": "Alice",
+    "items": [
+      { "product": "apple", "quantity": 10 },
+      { "product": "banana", "quantity": 5 }
+    ]
+  },
+  {
+    "_id": 2,
+    "customer": "Bob",
+    "items": [
+      { "product": "grape", "quantity": 20 },
+      { "product": "melon", "quantity": 2 }
+    ]
+  }
+]
+```
+
+**Projection to Include Specific Array Elements:**
+
+We will use projection to include only the first element of the `items` array.
+
+```javascript
+db.orders.find(
+  {},
+  {
+    customer: 1,
+    items: { $slice: 1 }
+  }
+)
+```
+
+**Explanation:**
+
+- **customer: 1:** Includes the `customer` field in the output.
+
+- **items: { $slice: 1 }:** Includes only the first element of the `items` array.
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "_id": 1,
+    "customer": "Alice",
+    "items": [
+      { "product": "apple", "quantity": 10, "price": 1.5 }
+    ]
+  },
+  {
+    "_id": 2,
+    "customer": "Bob",
+    "items": [
+      { "product": "grape", "quantity": 20, "price": 2.0 }
+    ]
+  }
+]
+```
+
+### Getting The Length Of An Array
+
+- To get the length of an array in MongoDB, you can use the `$size` operator within the `$project` stage of an aggregation pipeline.
+
+- The `$size` operator returns the number of elements in an array.
+
+**Example:**
+
+Let's assume we have a collection named `orders` with the following documents:
+
+```javascript
+db.orders.insertMany([
+  {
+    "_id": 1,
+    "customer": "Alice",
+    "items": ["apple", "banana", "orange"]
+  },
+  {
+    "_id": 2,
+    "customer": "Bob",
+    "items": ["grape", "melon"]
+  },
+  {
+    "_id": 3,
+    "customer": "Charlie",
+    "items": []
+  }
+])
+```
+
+**Aggregation Pipeline:**
+
+We will use the `$project` stage to add a new field `itemsCount` that contains the length of the `items` array.
+
+```javascript
+db.orders.aggregate([
+  {
+    $project: {
+      customer: 1,
+      itemsCount: { $size: "$items" }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$project:** This stage reshapes each document in the stream, including only the `customer` field and a new field `itemsCount`.
+
+- **$size:** This operator returns the number of elements in the `items` array.
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 1, "customer": "Alice", "itemsCount": 3 },
+  { "_id": 2, "customer": "Bob", "itemsCount": 2 },
+  { "_id": 3, "customer": "Charlie", "itemsCount": 0 }
+]
+```
+
+**Using $size in a Query:**
+
+You can also use the `$size` operator in a query to match documents where the array has a specific length.
+
+**Example:**
+
+Let's find documents where the `items` array has exactly 2 elements.
+
+```javascript
+db.orders.find({
+  items: { $size: 2 }
+})
+```
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 2, "customer": "Bob", "items": ["grape", "melon"] }
+]
+```
+
+### Using `$filter` Operator
+
+- The `$filter` operator in MongoDB is used to filter elements of an array based on a specified condition. It allows you to project only the elements of an array that match the given criteria.
+
+**Example:**
+
+Let's find documents where the `items` array contains elements that start with the letter `"g"`.
+
+```javascript
+db.orders.aggregate([
+  {
+    $project: {
+      customer: 1,
+      items: {
+        $filter: {
+          input: "$items",
+          as: "item",
+          cond: { $regexMatch: { input: "$$item", regex: /^g/ } }
+        }
+      }
+    }
+  }
+])
+```
+
+**Exaplanation:**
+
+1. **$project:** This stage is used to include or exclude fields from the documents.
+
+2. **customer: 1:** This includes the `customer` field in the output.
+
+3. **items:** This field is projected using the `$filter` operator.
+
+4. **$filter:** The operator takes three parameters:
+
+- **input:** The array to filter (`$items`).
+
+- **as:** The variable name for each element in the array (`item`).
+
+- **cond:** The condition to apply to each element. Here, `$regexMatch` is used to check if the element starts with the letter "g".
+
+**Expected Output:**
+
+```javascript
+[
+  { "_id": 1, "customer": "Alice", "items": ["grape"] },
+  { "_id": 2, "customer": "Bob", "items": ["grape"] }
+]
+```
+
+### Applying Multiple Operations To Array
+
+In MongoDB, you can use the `aggregate pipeline` to apply multiple operations to an array. The `aggregate pipeline` allows you to perform a sequence of operations on your data, such as filtering, projecting, grouping, and sorting.
+
+**Example:**
+
+Suppose you have a collection `students` with the following documents:
+
+```javascript
+[
+  {
+    "_id": 1,
+    "name": "Alice",
+    "scores": [85, 92, 78]
+  },
+  {
+    "_id": 2,
+    "name": "Bob",
+    "scores": [89, 94, 81]
+  },
+  {
+    "_id": 3,
+    "name": "Charlie",
+    "scores": [95, 88, 84]
+  }
+]
+```
+
+***You want to calculate the `average score` for each student and then `filter` out students with an average score below `90`.***
+
+**Aggregation Pipeline:**
+
+```javascript
+db.students.aggregate([
+  {
+    "$project": {
+      "name": 1,
+      "averageScore": { "$avg": "$scores" }
+    }
+  },
+  {
+    "$match": {
+      "averageScore": { "$gte": 90 }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+- **$project:** This stage reshapes each document in the stream, such as by adding new fields or removing existing fields. In this case, we are calculating the average score for each student using the $avg operator and including the `name` field.
+
+- **$match:** This stage filters the documents to pass only the documents that match the specified condition. Here, we are filtering out students whose average score is less than 90.
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "_id": 2,
+    "name": "Bob",
+    "averageScore": 88
+  },
+  {
+    "_id": 3,
+    "name": "Charlie",
+    "averageScore": 89
+  }
+]
+```
+
+### Understanding `$bucket`
+
+The `$bucket` stage in MongoDB's aggregation framework allows you to group documents into buckets based on a specified expression. This is useful for categorizing data into ranges.
+
+**Example:**
+
+Suppose you have a collection `students` with the following documents:
+
+```javascript
+[
+  {
+    "_id": 1,
+    "name": "Alice",
+    "scores": [85, 92, 78]
+  },
+  {
+    "_id": 2,
+    "name": "Bob",
+    "scores": [89, 94, 81]
+  },
+  {
+    "_id": 3,
+    "name": "Charlie",
+    "scores": [95, 88, 84]
+  }
+]
+```
+
+***You want to categorize students based on their average scores into different buckets.***
+
+**Aggregation Pipeline:**
+
+```javascript
+db.students.aggregate([
+  {
+    "$project": {
+      "name": 1,
+      "averageScore": { "$avg": "$scores" }
+    }
+  },
+  {
+    "$bucket": {
+      "groupBy": "$averageScore",
+      "boundaries": [0, 80, 90, 100],
+      "default": "Other",
+      "output": {
+        "count": { "$sum": 1 },
+        "students": {
+          "$push": {
+            "name": "$name",
+            "averageScore": "$averageScore"
+          }
+        }
+      }
+    }
+  }
+])
+```
+
+**Explanation:**
+
+1. **$project:** This stage reshapes each document in the stream, such as by adding new fields or removing existing fields. In this case, we are calculating the average score for each student using the $avg operator and including the `name` field.
+
+2. **$bucket:** This stage categorizes documents into specified buckets based on the `averageScore` field.
+
+- `groupBy:` The field to group by, in this case, `averageScore`.
+  
+- `boundaries:` The boundaries for the buckets. Here, we have three buckets: [0, 80), [80, 90), and [90, 100).
+  
+- `default:` The bucket for values that do not fit into the specified boundaries.
+  
+- `output:` The fields to include in the output. Here, we are counting the number of students in each bucket and pushing the `name` and `averageScore` of each student into an array.
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "_id": 0,
+    "count": 1,
+    "students": [
+      {
+        "name": "Alice",
+        "averageScore": 85
+      }
+    ]
+  },
+  {
+    "_id": 80,
+    "count": 2,
+    "students": [
+      {
+        "name": "Bob",
+        "averageScore": 88
+      },
+      {
+        "name": "Charlie",
+        "averageScore": 89
+      }
+    ]
+  }
+]
+```
+
+### Writing Pipeline Results Into a New Collection
+
+Let's consider we have a collection `orders` with documents representing different orders and their total amounts. We want to calculate the total sales and the number of orders for each customer and write the results into a new collection called `customerSales`.
+
+**Product Data:**
+
+```javascript
+[
+  {
+    "_id": 1,
+    "customerId": "C001",
+    "amount": 100
+  },
+  {
+    "_id": 2,
+    "customerId": "C002",
+    "amount": 200
+  },
+  {
+    "_id": 3,
+    "customerId": "C001",
+    "amount": 150
+  },
+  {
+    "_id": 4,
+    "customerId": "C003",
+    "amount": 300
+  },
+  {
+    "_id": 5,
+    "customerId": "C002",
+    "amount": 250
+  }
+]
+```
+
+**Aggregation Pipeline:**
+
+```javascript
+db.orders.aggregate([
+  {
+    "$group": {
+      "_id": "$customerId",
+      "totalSales": { "$sum": "$amount" },
+      "orderCount": { "$sum": 1 }
+    }
+  },
+  {
+    "$out": "customerSales"
+  }
+])
+```
+
+**Explanation:**
+
+1. **$group:** This stage groups documents by the customerId field and calculates the total sales and the number of orders for each customer.
+
+   - `_id:` The field to group by, in this case, `customerId`.
+  
+   - `totalSales:` The total sales amount for each customer, calculated using the `$sum` operator on the `amount` field.
+  
+   - `orderCount:` The number of orders for each customer, calculated using the `$sum` operator with a value of 1 for each document.
+
+2. **$out:** This stage writes the results of the aggregation pipeline to a specified collection. In this case, the results are written to the `customerSales` collection.
+
+***The result of the above aggregation pipeline will be written to the customerSales collection. You can then query this collection to see the results:***
+
+```javascript
+db.customerSales.find().pretty()
+```
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "_id": "C001",
+    "totalSales": 250,
+    "orderCount": 2
+  },
+  {
+    "_id": "C002",
+    "totalSales": 450,
+    "orderCount": 2
+  },
+  {
+    "_id": "C003",
+    "totalSales": 300,
+    "orderCount": 1
+  }
+]
+```
+
+### Working With `$geoNear` Stage
+
+- The `$geoNear` stage in MongoDB's aggregation framework is used to perform geospatial queries.
+  
+- It returns documents based on their proximity to a specified point. This stage must be the first stage in the pipeline.
+
+**Example:**
+
+Suppose you have a collection `places` with documents representing different places and their locations. Each document contains a `location` field with GeoJSON coordinates.
+
+```javascript
+[
+  {
+    "_id": 1,
+    "name": "Place A",
+    "location": { "type": "Point", "coordinates": [40.7128, -74.0060] }
+  },
+  {
+    "_id": 2,
+    "name": "Place B",
+    "location": { "type": "Point", "coordinates": [34.0522, -118.2437] }
+  },
+  {
+    "_id": 3,
+    "name": "Place C",
+    "location": { "type": "Point", "coordinates": [37.7749, -122.4194] }
+  }
+]
+```
+
+**Aggregation Pipeline with `$geoNear:`**
+
+```javascript
+db.places.aggregate([
+  {
+    "$geoNear": {
+      "near": { "type": "Point", "coordinates": [40.730610, -73.935242] },
+      "distanceField": "distance",
+      "maxDistance": 1000000,
+      "spherical": true
+    }
+  }
+])
+```
+
+1. **$geoNear:** This stage performs a geospatial query to find documents near a specified point.
+
+   - `near:` The point from which to calculate distances. This should be a GeoJSON point.
+  
+   - `distanceField:` The field in which to store the calculated distance.
+  
+   - `maxDistance:` The maximum distance from the `near` point to include in the results, in meters.
+  
+   - `spherical:` If true, the query will use spherical geometry to calculate distances.
+
+***The result of the above aggregation pipeline will return documents sorted by their proximity to the specified point `[40.730610, -73.935242]`.***
+
+***Expected Output:***
+
+```javascript
+[
+  {
+    "_id": 1,
+    "name": "Place A",
+    "location": { "type": "Point", "coordinates": [40.7128, -74.0060] },
+    "distance": 7452.7
+  }
+]
+```
+
+**For more information, refer to the Official docs:**
+
+- **Official Aggregation Framework:** [Official Aggregation Framework](https://docs.mongodb.com/manual/core/aggregation-pipeline/)
+  
+- **Learn more about $cond:** [Learn more about $cond](<https://docs.mongodb.com/manual/reference/operator/aggregation/cond/>).

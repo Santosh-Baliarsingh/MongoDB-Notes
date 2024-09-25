@@ -120,6 +120,13 @@
     - [Building Indexes in MongoDB](#building-indexes-in-mongodb)
     - [Importing JSON to MongoDB Shell](#importing-json-to-mongodb-shell)
     - [More Details](#more-details)
+  - [4. Geospatial Data in MongoDB](#4-geospatial-data-in-mongodb)
+    - [Adding GeoJSON Data](#adding-geojson-data)
+    - [Creating a Geospatial Index](#creating-a-geospatial-index)
+    - [Querying GeoJSON Data](#querying-geojson-data)
+    - [Finding Places Inside a Certain Area With `$geoWithin`](#finding-places-inside-a-certain-area-with-geowithin)
+    - [Finding Out if a User is Inside a Specific Area with `$geoIntersects`](#finding-out-if-a-user-is-inside-a-specific-area-with-geointersects)
+    - [Finding Places Within Certain Radius With `$centerSphere`](#finding-places-within-certain-radius-with-centersphere)
 
 ## What is MongoDB?
 
@@ -5120,3 +5127,375 @@ For more information, refer to the official MongoDB documentation:
 - **Partial Filter Expressions:** [Partial Filter Expressions](https://docs.mongodb.com/manual/core/index-partial/)
 - **Supported Default Languages:** [Text Search Languages](https://docs.mongodb.com/manual/reference/text-search-languages/#text-search-languages)
 - **Using Different Languages in the Same Index:** [Create a Text Index for a Collection in Multiple Languages](https://docs.mongodb.com/manual/tutorial/specify-language-for-text-index/#create-a-text-index-for-a-collection-in-multiple-languages)
+
+## 4. Geospatial Data in MongoDB
+
+- Geospatial queries in MongoDB allow you to store and query data that represents geographical locations.
+  
+- MongoDB supports various geospatial data types and queries, including 2D and 2DSphere indexes for different types of geospatial data.
+
+### Adding GeoJSON Data
+
+- GeoJSON is a format for encoding a variety of geographic data structures using JavaScript Object Notation (JSON).
+
+- It supports various types of geometries such as `Point`, `LineString`, `Polygon`, etc.
+
+**Example of GeoJSON Data:**
+
+```javascript
+{
+  "type": "Point",
+  "coordinates": [20.295390834883428, 85.82182190544279]
+}
+```
+
+**Inserting GeoJSON Data into MongoDB:**
+
+```javascript
+// Insert GeoJSON data into a collection
+db.places.insertOne({
+  name: "Central Park",
+  location: {
+    type: "Point",
+    coordinates: [20.295390834883428, 85.82182190544279]
+  }
+});
+```
+
+***Expected Output:***
+
+```javascript
+{
+  acknowledged: true,
+  insertedId: ObjectId('66f2e417278fc89d9ec73bf8')
+}
+```
+
+***Verify the Data***
+
+```javascript
+db.places.find()
+```
+
+***Expected Output:***
+
+```javascript
+[
+  {
+    _id: ObjectId('66f2e417278fc89d9ec73bf8'),
+    name: 'Central Park',
+    location: { type: 'Point', coordinates: [ 20.295390834883428, 85.82182190544279] }
+  }
+]
+```
+
+### Creating a Geospatial Index
+
+```javascript
+// Create a 2dsphere index on the location field
+db.places.createIndex({ location: "2dsphere" });
+```
+
+The selected code creates a geospatial index on the `location` field of the places collection in MongoDB.
+
+**Breakdown:**
+
+1. **Collection:** `db.places`
+
+   - This specifies the collection on which the index is being created. In this case, it is the `places` collection.
+
+2. **createIndex Method:** `createIndex({ location: "2dsphere" })`
+
+   - The `createIndex` method is used to create an index on a specified field or fields in a collection.
+
+3. **Index Specification:** `{ location: "2dsphere" }`
+
+   - This specifies the field to be indexed and the type of index to be created. Here, the `location` field is being indexed with a `2dsphere` index.
+
+**2dsphere Index:**
+
+- **Purpose:** A `2dsphere` index supports queries that calculate geometries on an Earth-like sphere. It is used for storing and querying GeoJSON data, which includes points, lines, and polygons.
+
+- **Usage:** This type of index is essential for performing geospatial queries, such as finding documents near a specific point, within a certain distance, or within a specific polygon.
+
+### Querying GeoJSON Data
+
+```javascript
+// Find places near a specific point
+db.places.find({
+  location: {
+    $near: {
+      $geometry: {
+        type: "Point",
+        coordinates: [20.295390834883428, 85.82182190544279]
+      },
+      $maxDistance: 5000 // 5 kilometers
+    }
+  }
+});
+```
+
+**Breakdown:**
+
+1. **Collection:** `db.places.find()`
+
+   - This specifies that we are querying the `places` collection.
+
+2. **Query Condition:** `{ location: { $near: { ... } } }`
+
+   - This condition is used to find documents where the `location` field is near a specified point.
+
+3. **`$near Operator:`** `$near: { $geometry: { ... }, $maxDistance: 5000 }`
+
+   - The `$near` operator is used to find documents that are close to a specified point. It requires a `$geometry` subfield and can optionally include a `$maxDistance` subfield.
+
+4. **`$geometry Subfield:`** `{ $geometry: { type: "Point", coordinates: [20.295390834883428, 85.82182190544279] } }`
+
+   - The `$geometry` subfield specifies the type of the geometry and its coordinates. In this case, it is a `Point` with coordinates `[20.295390834883428, 85.82182190544279]` (longitude , latitude).
+
+5. **`$maxDistance Subfield:`** `$maxDistance: 5000`
+
+   - The `$maxDistance` subfield specifies the maximum distance from the point, in meters. Here, it is set to `5000` meters (5 kilometers).
+
+This query finds all documents in the `places` collection where the `location` field is within 5 kilometers of the point with coordinates `[20.295390834883428, 85.82182190544279]`. The `location` field must be indexed with a `2dsphere` index for this query to work efficiently.
+
+### Finding Places Inside a Certain Area With `$geoWithin`
+
+To find places within a certain area, you can use the `$geoWithin` operator in MongoDB. This operator allows you to specify a GeoJSON polygon that represents the area of interest.
+
+**Example of a Polygon:**
+A polygon is defined by an array of coordinates that form a closed loop. Here is an example of a GeoJSON polygon:
+
+```javascript
+{
+  "type": "Polygon",
+  "coordinates": [
+    [
+      [85.82182190544279, 20.295390834883428],
+      [85.82282190544279, 20.295390834883428],
+      [85.82282190544279, 20.296390834883428],
+      [85.82182190544279, 20.296390834883428],
+      [85.82182190544279, 20.295390834883428]
+    ]
+  ]
+}
+```
+
+**Inserting GeoJSON Data into MongoDB:**
+
+```javascript
+// Insert GeoJSON data into a collection
+db.places.insertMany([
+  { name: "Place 1", location: { type: "Point", coordinates: [85.82182190544279, 20.295390834883428] } },
+  { name: "Place 2", location: { type: "Point", coordinates: [85.82282190544279, 20.295390834883428] } },
+  { name: "Place 3", location: { type: "Point", coordinates: [85.82282190544279, 20.296390834883428] } }
+]);
+```
+
+**Creating a Geospatial Index:**
+
+```javascript
+// Create a 2dsphere index on the location field
+db.places.createIndex({ location: "2dsphere" });
+```
+
+**Querying GeoJSON Data to Find Places Within a Specified Area:**
+
+```javascript
+// Define the polygon representing the area
+const polygon = {
+  type: "Polygon",
+  coordinates: [
+    [
+      [85.82182190544279, 20.295390834883428],
+      [85.82282190544279, 20.295390834883428],
+      [85.82282190544279, 20.296390834883428],
+      [85.82182190544279, 20.296390834883428],
+      [85.82182190544279, 20.295390834883428]
+    ]
+  ]
+};
+
+// Find places within the specified polygon
+db.places.find({
+  location: {
+    $geoWithin: {
+      $geometry: polygon
+    }
+  }
+});
+```
+
+***Expected Output:***
+
+```javascript
+[
+  { "_id": ObjectId("..."), "name": "Place 1", "location": { "type": "Point", "coordinates": [85.82182190544279, 20.295390834883428] } },
+  { "_id": ObjectId("..."), "name": "Place 2", "location": { "type": "Point", "coordinates": [85.82282190544279, 20.295390834883428] } },
+  { "_id": ObjectId("..."), "name": "Place 3", "location": { "type": "Point", "coordinates": [85.82282190544279, 20.296390834883428] } }
+]
+```
+
+### Finding Out if a User is Inside a Specific Area with `$geoIntersects`
+
+To determine if a user is inside a specific area, you can use the `$geoIntersects` operator in MongoDB. This operator allows you to specify a GeoJSON polygon that represents the area of interest and check if a user's location intersects with that polygon.
+
+**Example of a Polygon:**
+
+A polygon is defined by an array of coordinates that form a closed loop. Here is an example of a GeoJSON polygon:
+
+```javascript
+{
+  "type": "Polygon",
+  "coordinates": [
+    [
+      [85.82182190544279, 20.295390834883428],
+      [85.82282190544279, 20.295390834883428],
+      [85.82282190544279, 20.296390834883428],
+      [85.82182190544279, 20.296390834883428],
+      [85.82182190544279, 20.295390834883428]
+    ]
+  ]
+}
+```
+
+**Inserting User Location Data into MongoDB:**
+
+```javascript
+// Insert user location data into a collection
+db.users.insertOne({
+  name: "User 1",
+  location: { type: "Point", coordinates: [85.82182190544279, 20.295390834883428] }
+});
+```
+
+**Creating a Geospatial Index:**
+
+```javascript
+// Create a 2dsphere index on the location field
+db.users.createIndex({ location: "2dsphere" });
+```
+
+**Query to Check if User is Inside the Specified Area Using `$geoIntersects`:**
+
+```javascript
+// Define the polygon representing the area
+const polygon = {
+  type: "Polygon",
+  coordinates: [
+    [
+      [85.82182190544279, 20.295390834883428],
+      [85.82282190544279, 20.295390834883428],
+      [85.82282190544279, 20.296390834883428],
+      [85.82182190544279, 20.296390834883428],
+      [85.82182190544279, 20.295390834883428]
+    ]
+  ]
+};
+
+// Find users whose locations intersect with the specified polygon
+db.users.find({
+  location: {
+    $geoIntersects: {
+      $geometry: polygon
+    }
+  }
+});
+```
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    _id: ObjectId('66f2f15f278fc89d9ec73bf9'),
+    name: 'User 1',
+    location: {
+      type: 'Point',
+      coordinates: [ 85.82182190544279, 20.295390834883428 ]
+    }
+  }
+]
+```
+
+### Finding Places Within Certain Radius With `$centerSphere`
+
+To find places within a certain radius using the MongoDB shell, you can use the $geoWithin operator along with the **` $centerSphere`** operator. Here's how you can do it:
+
+**Example:**
+
+Assume you have a collection named `places` with documents that include a `location` field containing GeoJSON data for points.
+
+```javascript
+{
+  "_id": 1,
+  "name": "Place 1",
+  "location": {
+    "type": "Point",
+    "coordinates": [85.82182190544279, 20.295390834883428]
+  }
+},
+ {
+    "_id": 2,
+    "name": "Place 2",
+    "location": {
+      "type": "Point",
+      "coordinates": [85.82282190544279, 20.296390834883428]
+    }
+  }
+```
+
+**Create Geospatial Index:**
+
+```javascript
+db.places.createIndex({ location: "2dsphere" });
+```
+
+**Query to Find Places Within a Certain Radius:**
+
+```javascript
+const center = [85.82182190544279, 20.295390834883428]; // Center point coordinates
+const radiusInMeters = 1000; // Radius in meters
+const radiusInRadians = radiusInMeters / 6378100; // Convert meters to radians (Earth's radius in meters)
+
+db.places.find({
+  location: {
+    $geoWithin: {
+      $centerSphere: [center, radiusInRadians]
+    }
+  }
+}).pretty();
+```
+
+Uses `$geoWithin` and `$centerSphere` to find places within the specified radius from the center point.
+
+**Expected Output:**
+
+```javascript
+[
+  {
+    "_id": 1,
+    "name": "Place 1",
+    "location": {
+      "type": "Point",
+      "coordinates": [85.82182190544279, 20.295390834883428]
+    }
+  },
+  {
+    "_id": 2,
+    "name": "Place 2",
+    "location": {
+      "type": "Point",
+      "coordinates": [85.82282190544279, 20.296390834883428]
+    }
+  }
+]
+```
+
+The output will include all documents from the `places` collection that have a `location` field within the specified radius from the center point.
+
+**For more information, refer to the Official docs:**
+
+- **Geospatial Queries:** [official MongoDB documentation](https://docs.mongodb.com/manual/geospatial-queries/)
+  
+- **Geospatial Query Operators:** [Geospatial Query Operators](https://docs.mongodb.com/manual/reference/operator/query-geospatial/).

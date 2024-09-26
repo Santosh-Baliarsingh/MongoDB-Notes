@@ -142,6 +142,16 @@
     - [Understanding `$bucket`](#understanding-bucket)
     - [Writing Pipeline Results Into a New Collection](#writing-pipeline-results-into-a-new-collection)
     - [Working With `$geoNear` Stage](#working-with-geonear-stage)
+  - [Working With Numbers](#working-with-numbers)
+    - [1. **32-bit Integer (`NumberInt`):**](#1-32-bit-integer-numberint)
+    - [2. **64-bit Integer (`NumberLong`)**](#2-64-bit-integer-numberlong)
+    - [3. **Double (`NumberDouble`)**](#3-double-numberdouble)
+    - [4. **Decimal (`NumberDecimal`)**](#4-decimal-numberdecimal)
+  - [Performance , Fault Tolerancy And Deployment](#performance--fault-tolerancy-and-deployment)
+    - [Understanding Capped Collections](#understanding-capped-collections)
+    - [What are Replica Sets?](#what-are-replica-sets)
+    - [Understanding Sharding](#understanding-sharding)
+    - [Deploying a MongoDB server using MongoDB Atlas](#deploying-a-mongodb-server-using-mongodb-atlas)
 
 ## What is MongoDB?
 
@@ -7172,3 +7182,418 @@ db.places.aggregate([
 - **Official Aggregation Framework:** [Official Aggregation Framework](https://docs.mongodb.com/manual/core/aggregation-pipeline/)
   
 - **Learn more about $cond:** [Learn more about $cond](<https://docs.mongodb.com/manual/reference/operator/aggregation/cond/>).
+
+## Working With Numbers
+
+### 1. **32-bit Integer (`NumberInt`):**
+
+- **Description**: Represents a 32-bit signed integer.
+  
+  - **Example**:
+  
+     ```javascript
+     var int32 = NumberInt(123);
+     db.collection.insert({ value: int32 });
+     ```
+
+  - **Output**:
+  
+     ```javascript
+     { "_id" : ObjectId("..."), "value" : NumberInt(123) }
+     ```
+
+  - **Explanation**: Use `NumberInt` when you need to store small integer values that fit within the 32-bit range (-2,147,483,648 to 2,147,483,647).
+
+### 2. **64-bit Integer (`NumberLong`)**
+
+- **Description**: Represents a 64-bit signed integer.
+  
+  - **Example**:
+  
+     ```javascript
+     var int64 = NumberLong(123456789012345);
+     db.collection.insert({ value: int64 });
+     ```
+
+  - **Output**:
+  
+     ```javascript
+     { "_id" : ObjectId("..."), "value" : NumberLong("123456789012345") }
+     ```
+
+  - **Explanation**: Use `NumberLong` for larger integer values that exceed the 32-bit range.
+
+### 3. **Double (`NumberDouble`)**
+
+- **Description**: Represents a double-precision 64-bit IEEE 754 floating point.
+  
+  - **Example**:
+  
+     ```javascript
+     var double = NumberDouble(123.45);
+     db.collection.insert({ value: double });
+     ```
+
+  - **Output**:
+
+     ```json
+     { "_id" : ObjectId("..."), "value" : 123.45 }
+     ```
+
+  - **Explanation**: Use `NumberDouble` for floating-point numbers that require double precision.
+
+### 4. **Decimal (`NumberDecimal`)**
+
+- **Description**: Represents a 128-bit high-precision decimal.
+
+  - **Example**:
+  
+     ```javascript
+     var decimal = NumberDecimal("12345.6789012345678901234567890123456789");
+     db.collection.insert({ value: decimal });
+     ```
+
+  - **Output**:
+
+     ```json
+
+     { "_id" : ObjectId("..."), "value" : NumberDecimal("12345.6789012345678901234567890123456789") }
+     ```
+
+  - **Explanation**: Use `NumberDecimal` for high-precision decimal values, which are crucial for applications requiring exact decimal representation, such as financial calculations.
+
+**Summary:**
+
+- **NumberInt:** `32-bit integer`, suitable for small integers.
+
+- **NumberLong:** `64-bit integer`, suitable for large integers.
+
+- **NumberDouble:** `64-bit floating-point`, suitable for double precision floating-point numbers.
+
+- **NumberDecimal:** `128-bit decimal`, suitable for high-precision decimal values.
+
+**For more information, refer to the Official docs:**
+
+- [Difference between decimal, float and double in .NET](https://stackoverflow.com/questions/618535/difference-between-decimal-float-and-double-in-net)
+
+- [Number Ranges](https://social.msdn.microsoft.com/Forums/vstudio/en-US/d2f723c7-f00a-4600-945a-72da23cbc53d/can-anyone-explain-clearly-about-float-vs-decimal-vs-double-?forum=csharpgeneral)
+
+- [Model Monetary Data in MongoDB](https://docs.mongodb.com/manual/tutorial/model-monetary-data/)
+
+## Performance , Fault Tolerancy And Deployment
+
+**Performance:**
+
+1. **Indexes:** Use indexes to improve query performance.
+
+2. **Sharding:** Distribute data across multiple servers.
+
+3. **Replication:** Use replica sets to ensure high availability.
+  
+4. **Schema Design:** Optimize schema design for read and write operations.
+
+5. **Aggregation:** Use the aggregation framework for complex data processing.
+
+**Fault Tolerance:**
+
+1. **Replica Sets:** Use replica sets to provide redundancy and high availability.
+
+2. **Automatic Failover:** MongoDB automatically fails over to a secondary replica if the primary fails.
+
+3. **Backup and Restore:** Regularly back up your data and test your restore process.
+
+**Deployment:**
+
+1. **Standalone:** Single MongoDB instance for development or testing.
+
+2. **Replica Set:** Multiple MongoDB instances for high availability.
+
+3. **Sharded Cluster:** Distribute data across multiple shards for horizontal scaling.
+
+4. **Cloud Deployment:** Use MongoDB Atlas for managed cloud deployment.
+
+### Understanding Capped Collections
+
+- `Capped collections` in MongoDB are fixed-size collections that support high-throughput operations by maintaining insertion order.
+
+- They are useful for scenarios where you need to store a fixed amount of data, such as logs or cache data, and automatically discard the oldest entries when the collection reaches its size limit.
+
+**Key Features of Capped Collections:**
+
+1. **Fixed Size:** The size of a capped collection is specified when it is created.
+
+2. **Insertion Order:** Documents are stored in the order they are inserted.
+
+3. **Automatic Overwrite:** When the size limit is reached, the oldest documents are automatically overwritten by new ones.
+
+4. **High Performance:** Capped collections provide high performance for insert operations.
+
+**Example:**
+
+```javascript
+// Create a capped collection with a maximum size of 1MB and a maximum of 1000 documents
+db.createCollection("logs", { capped: true, size: 1048576, max: 1000 });
+
+// Insert a document into the capped collection
+db.logs.insert({ message: "This is a log message", timestamp: new Date() });
+
+// Query the capped collection
+db.logs.find();
+```
+
+**Use Cases:**
+
+- **Logging:** Store application logs where only the most recent logs are needed.
+
+- **Caching:** Store temporary data that can be overwritten when the collection reaches its size limit.
+
+- **Time-Series Data:** Store time-series data where only the most recent data points are relevant.
+
+### What are Replica Sets?
+
+- `Replica sets` in MongoDB are a group of mongod instances that maintain the same data set, providing redundancy and high availability.
+
+- A `replica set` consists of multiple data-bearing nodes and optionally one arbiter node. Replica sets are the basis for all production deployments of MongoDB.
+
+**Key Features of Replica Sets::**
+
+1. **Redundancy:** Multiple copies of data are maintained to ensure data availability.
+
+2. **Automatic Failover:** If the primary node fails, an election process selects a new primary from the secondaries.
+
+3. **Read Scaling:** Secondary nodes can be used to distribute read operations.
+
+4. **Data Consistency:** Replica sets ensure that all nodes have the same data.
+
+**Example:**
+
+***Step 1: Start multiple MongoDB instances with the --replSet option.***
+
+```javascript
+//Start three MongoDB instances on different ports
+mongod --replSet rs0 --port 27017 --dbpath /data/db1
+mongod --replSet rs0 --port 27018 --dbpath /data/db2
+mongod --replSet rs0 --port 27019 --dbpath /data/db3
+```
+
+***Step 2: Connect to one of the instances and initiate the replica set.:***
+
+```javascript
+// Connect to the MongoDB instance
+mongo --port 27017
+
+// Initiate the replica set
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "localhost:27017" },
+    { _id: 1, host: "localhost:27018" },
+    { _id: 2, host: "localhost:27019" }
+  ]
+});
+```
+
+***Step 3: Check the status of the replica set to ensure it is configured correctly.***
+
+```javascript
+// Check the status of the replica set
+rs.status();
+```
+
+**Use Cases:**
+
+- **High Availability:** Ensure that your application remains available even if one or more nodes fail.
+
+- **Disaster Recovery:** Protect against data loss by maintaining multiple copies of data.
+
+- **Read Scaling:** Distribute read operations across secondary nodes to improve performance.
+
+### Understanding Sharding
+
+1. `Sharding` in MongoDB is a method for distributing data across multiple servers or clusters.
+
+2. It allows MongoDB to handle large datasets and high-throughput operations by horizontally scaling the database.
+
+3. `Sharding` is particularly useful for applications with large amounts of data and high query rates.
+
+**Key Concepts of Sharding::**
+
+1. **Shard:** A single MongoDB instance or replica set that holds a subset of the sharded data.
+
+2. **Shard Key:** A field or fields used to distribute the data across shards. The choice of shard key is crucial for balanced distribution.
+
+3. **Config Servers:** Store metadata and configuration settings for the sharded cluster.
+
+4. **Mongos:** A routing service that directs queries to the appropriate shard(s).
+
+**Example:**
+
+***Step 1: Start the config servers that store metadata for the sharded cluster.***
+
+```javascript
+//Start three config servers
+mongod --configsvr --replSet configReplSet --port 27019 --dbpath /data/configdb1
+mongod --configsvr --replSet configReplSet --port 27020 --dbpath /data/configdb2
+mongod --configsvr --replSet configReplSet --port 27021 --dbpath /data/configdb3
+```
+
+***Step 2: Connect to one of the config servers and initiate the replica set.***
+
+```javascript
+// Connect to the config server
+mongo --port 27019
+
+// Initiate the config server replica set
+rs.initiate({
+  _id: "configReplSet",
+  configsvr: true,
+  members: [
+    { _id: 0, host: "localhost:27019" },
+    { _id: 1, host: "localhost:27020" },
+    { _id: 2, host: "localhost:27021" }
+  ]
+});
+```
+
+***Step 3: Start the shard servers that will store the actual data.***
+
+```javascript
+// Start shard servers
+mongod --shardsvr --replSet shardReplSet1 --port 27022 --dbpath /data/shard1
+mongod --shardsvr --replSet shardReplSet2 --port 27023 --dbpath /data/shard2
+```
+
+***Step 4: Start the mongos instance that will route queries to the appropriate shards.***
+
+```javascript
+// Start mongos
+mongos --configdb configReplSet/localhost:27019,localhost:27020,localhost:27021 --port 27017
+```
+
+***Step 5: Connect to the mongos instance and add the shards to the cluster.***
+
+```javascript
+// Connect to mongos
+mongo --port 27017
+
+// Add shards to the cluster
+sh.addShard("shardReplSet1/localhost:27022");
+sh.addShard("shardReplSet2/localhost:27023");
+```
+
+***Step 6: Enable sharding on a specific database and collection.***
+
+```javascript
+// Enable sharding on the database
+sh.enableSharding("myDatabase");
+
+// Shard the 'users' collection on the 'userId' field
+sh.shardCollection("myDatabase.users", { userId: 1 });
+```
+
+**Use Cases:**
+
+- **Large Datasets:** Distribute large datasets across multiple servers to manage storage and performance.
+
+- **High Throughput:** Handle high query rates by distributing the load across multiple shards.
+
+- **Geographically Distributed Data:** Store data closer to users by distributing shards across different geographic locations.
+
+### Deploying a MongoDB server using MongoDB Atlas
+
+- Deploying a MongoDB server using MongoDB Atlas, especially the free tier `M0`, is a straightforward process.
+
+- MongoDB Atlas is a fully managed cloud database service that simplifies the deployment, management, and scaling of MongoDB databases. Below are the steps to deploy a MongoDB server using MongoDB Atlas free tier:
+
+**Step 1: Sign Up for MongoDB Atlas:**
+
+1. Go to the [MongoDB Atlas website](https://www.mongodb.com/products/platform/atlas-database).
+
+2. Click on "Start Free" and sign up for an account.
+
+**Step 2: Create a New Cluster:**
+
+1. After signing in, click on "Build a Cluster".
+
+2. Choose the free tier option (M0 Sandbox).
+
+3. Select your preferred cloud provider and region.
+
+4. Click "Create Cluster".
+
+**Step 3: Configure Cluster:**
+
+1. Wait for the cluster to be created (this may take a few minutes).
+
+2. Once the cluster is ready, click on "Collections" to create a new database and collection.
+
+**Step 4: Add a Database User:**
+
+1. Go to the "Database Access" tab.
+
+2. Click on "Add New Database User".
+
+3. Enter a username and password.
+
+4. Assign the user appropriate roles (e.g., "Read and write to any database").
+
+5. Click "Add User".
+
+**Step 5: Whitelist IP Address:**
+
+1. Go to the "Network Access" tab.
+
+2. Click on "Add IP Address".
+
+3. You can either add your current IP address or allow access from anywhere (0.0.0.0/0) for development purposes.
+  
+4. Click "Confirm".
+
+**Step 6: Connect to Your Cluster:**
+
+1. Go back to the "Clusters" tab.
+
+2. Click on "Connect" for your cluster.
+
+3. Choose "Connect Your Application".
+
+4. Copy the connection string provided.
+
+**Step 7: Connect Using MongoDB Shell or Application:**
+
+1. Using MongoDB Shell:
+
+   ```javascript
+   mongo "your-connection-string"
+   ```
+
+   ***Note:*** Replace `your-connection-string` with the connection string you copied, and make sure to replace `<password>` with the password for your database user.
+
+2. Using a Node.js Application
+
+   ```javascript
+   const { MongoClient } = require('mongodb');
+   const uri = "your-connection-string";
+   const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+   async function run() {
+   try {
+    await client.connect();
+    console.log("Connected to MongoDB Atlas");
+    // Perform operations
+    } finally {
+    await client.close();
+    }
+    }
+    run().catch(console.dir);
+   ```
+
+***Note:*** Replace `your-connection-string` with the connection string you copied, and make sure to replace `<password>` with the password for your database user.
+
+***This setup provides a fully managed, cloud-based MongoDB instance suitable for development and testing purposes.***
+
+***For more information refer to Official Docs:***
+
+- [Official Docs on Replica Sets](https://docs.mongodb.com/manual/replication/)
+  
+- [Official Docs on Sharding](https://docs.mongodb.com/manual/sharding/)

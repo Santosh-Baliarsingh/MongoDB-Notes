@@ -142,16 +142,20 @@
     - [Understanding `$bucket`](#understanding-bucket)
     - [Writing Pipeline Results Into a New Collection](#writing-pipeline-results-into-a-new-collection)
     - [Working With `$geoNear` Stage](#working-with-geonear-stage)
-  - [Working With Numbers](#working-with-numbers)
+  - [6. Working With Numbers](#6-working-with-numbers)
     - [1. **32-bit Integer (`NumberInt`):**](#1-32-bit-integer-numberint)
     - [2. **64-bit Integer (`NumberLong`)**](#2-64-bit-integer-numberlong)
     - [3. **Double (`NumberDouble`)**](#3-double-numberdouble)
     - [4. **Decimal (`NumberDecimal`)**](#4-decimal-numberdecimal)
-  - [Performance , Fault Tolerancy And Deployment](#performance--fault-tolerancy-and-deployment)
+  - [7. Performance , Fault Tolerancy And Deployment](#7-performance--fault-tolerancy-and-deployment)
     - [Understanding Capped Collections](#understanding-capped-collections)
     - [What are Replica Sets?](#what-are-replica-sets)
     - [Understanding Sharding](#understanding-sharding)
     - [Deploying a MongoDB server using MongoDB Atlas](#deploying-a-mongodb-server-using-mongodb-atlas)
+  - [8. Transaction](#8-transaction)
+    - [Use Cases for Transactions in MongoDB](#use-cases-for-transactions-in-mongodb)
+  - [9. Introduction Of Stitch](#9-introduction-of-stitch)
+    - [What is Stitch?](#what-is-stitch)
 
 ## What is MongoDB?
 
@@ -7183,7 +7187,7 @@ db.places.aggregate([
   
 - **Learn more about $cond:** [Learn more about $cond](<https://docs.mongodb.com/manual/reference/operator/aggregation/cond/>).
 
-## Working With Numbers
+## 6. Working With Numbers
 
 ### 1. **32-bit Integer (`NumberInt`):**
 
@@ -7280,7 +7284,7 @@ db.places.aggregate([
 
 - [Model Monetary Data in MongoDB](https://docs.mongodb.com/manual/tutorial/model-monetary-data/)
 
-## Performance , Fault Tolerancy And Deployment
+## 7. Performance , Fault Tolerancy And Deployment
 
 **Performance:**
 
@@ -7597,3 +7601,224 @@ sh.shardCollection("myDatabase.users", { userId: 1 });
 - [Official Docs on Replica Sets](https://docs.mongodb.com/manual/replication/)
   
 - [Official Docs on Sharding](https://docs.mongodb.com/manual/sharding/)
+
+## 8. Transaction
+
+- In MongoDB, a `transaction` is a sequence of one or more operations that are executed as a single unit of work. Transactions ensure that the operations are atomic, consistent, isolated, and durable (ACID).
+
+- This means that either all the operations in the transaction are applied, or none of them are.
+
+### Use Cases for Transactions in MongoDB
+
+- **Multi-Document Operations:** When you need to update multiple documents in a single operation to ensure data consistency.
+
+- **Cross-Collection Operations:** When operations span multiple collections and you need to ensure that all changes are applied atomically.
+
+- **Complex Business Logic:** When implementing complex business logic that requires multiple steps, transactions ensure that either all steps are completed or none are.
+
+- **Financial Applications:** Ensuring that financial transactions are processed correctly and consistently.
+
+**Example:**
+
+***how to perform a transaction in the MongoDB shell:***
+
+```javascript
+// Start a session.
+const session = db.getMongo().startSession();
+
+// Start a transaction.
+session.startTransaction();
+
+try {
+  // Get the collections.
+  const coll1 = session.getDatabase('test').getCollection('example1');
+  const coll2 = session.getDatabase('test').getCollection('example2');
+
+  // Perform operations within the transaction.
+  coll1.insertOne({ name: 'Alice' });
+  coll2.insertOne({ name: 'Bob' });
+
+  // Commit the transaction.
+  session.commitTransaction();
+  print('Transaction committed.');
+} catch (error) {
+  // Abort the transaction in case of an error.
+  session.abortTransaction();
+  print('Transaction aborted due to an error:', error);
+} finally {
+  // End the session.
+  session.endSession();
+}
+```
+
+***This above example demonstrates how to start a session, perform operations within a transaction, and commit or abort the transaction based on whether an error occurs.***
+
+***For more information refer to official docs***
+
+- [Official Docs on Transactions](https://docs.mongodb.com/manual/core/transactions/)
+
+## 9. Introduction Of Stitch
+
+### What is Stitch?
+
+- MongoDB `Stitch` is a backend-as-a-service (BaaS) provided by MongoDB.
+
+- It allows developers to build applications faster by providing a suite of backend services and features, such as:
+
+1. **Serverless Functions:** Write and deploy functions that run in response to database changes, HTTP requests, or scheduled intervals.
+
+2. **Data Access Rules:** Define fine-grained access control rules for your data.
+
+3. **Authentication:** Integrate various authentication providers like Google, Facebook, and custom JWT.
+
+4. **Mobile Sync:** Synchronize data between your mobile application and MongoDB Atlas.
+
+5. **Third-Party Services:** Integrate with other services like AWS, Twilio, and more.
+
+***Note:***
+
+**`Stitch`** has been rebranded as **`MongoDB Realm`**, which continues to offer these features along with additional capabilities for mobile and web application development.
+
+***Example:***
+
+let's build a simple `CRUD (Create, Read, Update, Delete) application` using `MongoDB Stitch` (now MongoDB Realm) for a `Note app`. Here's a step-by-step guide:
+
+**1. Set Up MongoDB Realm:**
+
+- **Create a MongoDB Atlas Cluster:** If you don't have one, create a MongoDB Atlas cluster.
+
+- **Create a Realm App:** Go to the Realm section in MongoDB Atlas and create a new Realm app.
+
+- **Configure Authentication:** Enable anonymous authentication for simplicity.
+
+- **Create a MongoDB Service:** Link your Realm app to your MongoDB Atlas cluster.
+
+***Note:- MongoDB Realm (App Services) typically requires at least an M2 or higher tier cluster. for M0 (free tier) it's not available***
+
+**2. Define the Schema:**
+
+Create a collection named `notes` in your MongoDB Atlas cluster with the following schema:
+
+```javascript
+{
+  "title": "string",
+  "content": "string",
+  "createdAt": "date"
+}
+```
+
+**3. Set Up Data Access Rules:**
+
+Define rules to allow read and write access to the `notes` collection.
+
+**4. Create Functions:**
+
+Create serverless functions for each `CRUD` operation.
+
+**Create Note:**
+
+```javascript
+exports = async function createNote(title, content) {
+  const collection = context.services.get("mongodb-atlas").db("your_db_name").collection("notes");
+  const result = await collection.insertOne({
+    title: title,
+    content: content,
+    createdAt: new Date()
+  });
+  return result.insertedId;
+};
+```
+
+**Read Note:**
+
+```javascript
+exports = async function readNotes() {
+  const collection = context.services.get("mongodb-atlas").db("your_db_name").collection("notes");
+  return await collection.find({}).toArray();
+};
+```
+
+**Update Note:**
+
+```javascript
+exports = async function updateNote(id, title, content) {
+  const collection = context.services.get("mongodb-atlas").db("your_db_name").collection("notes");
+  const result = await collection.updateOne(
+    { _id: BSON.ObjectId(id) },
+    { $set: { title: title, content: content, updatedAt: new Date() } }
+  );
+  return result.modifiedCount;
+};
+```
+
+**Delete Note:**
+
+```javascript
+exports = async function deleteNote(id) {
+  const collection = context.services.get("mongodb-atlas").db("your_db_name").collection("notes");
+  const result = await collection.deleteOne({ _id: BSON.ObjectId(id) });
+  return result.deletedCount;
+};
+```
+
+**5. Frontend Integration:**
+
+Use the `Realm Web SDK` to integrate these functions into your frontend application.
+
+**HTML:**
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Note Taking App</title>
+</head>
+<body>
+  <h1>Note Taking App</h1>
+  <div id="notes"></div>
+  <button onclick="createNote()">Create Note</button>
+  <script src="https://unpkg.com/realm-web/dist/bundle.iife.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+```
+
+**JavaScript (app.js):**
+
+```javascript
+const app = new Realm.App({ id: "your-realm-app-id" });
+
+async function login() {
+  const credentials = Realm.Credentials.anonymous();
+  await app.logIn(credentials);
+}
+
+async function createNote() {
+  const title = prompt("Enter note title:");
+  const content = prompt("Enter note content:");
+  const result = await app.currentUser.callFunction("createNote", title, content);
+  alert(`Note created with ID: ${result}`);
+  loadNotes();
+}
+
+async function loadNotes() {
+  const notes = await app.currentUser.callFunction("readNotes");
+  const notesDiv = document.getElementById("notes");
+  notesDiv.innerHTML = "";
+  notes.forEach(note => {
+    const noteDiv = document.createElement("div");
+    noteDiv.innerHTML = `<h2>${note.title}</h2><p>${note.content}</p>`;
+    notesDiv.appendChild(noteDiv);
+  });
+}
+
+login().then(loadNotes);
+```
+
+***This setup allows you to perform CRUD operations on notes using MongoDB Realm, providing a backend service for your note app.***
+
+***For more information refer Official Docs:***
+
+- [MongoDB Realm documentation](https://www.mongodb.com/docs/atlas/device-sdks/)

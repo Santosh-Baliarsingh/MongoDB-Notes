@@ -156,6 +156,8 @@
     - [Use Cases for Transactions in MongoDB](#use-cases-for-transactions-in-mongodb)
   - [9. Introduction Of Stitch](#9-introduction-of-stitch)
     - [What is Stitch?](#what-is-stitch)
+  - [10. MongoDB and Security](#10-mongodb-and-security)
+    - [Understanding Role Based Access Control](#understanding-role-based-access-control)
 
 ## What is MongoDB?
 
@@ -7822,3 +7824,97 @@ login().then(loadNotes);
 ***For more information refer Official Docs:***
 
 - [MongoDB Realm documentation](https://www.mongodb.com/docs/atlas/device-sdks/)
+
+## 10. MongoDB and Security
+
+1. **Authentication:** Ensure that only authorized users can access the database.
+
+   - Use SCRAM (Salted Challenge Response Authentication Mechanism) for user authentication.
+
+   - Enable role-based access control (RBAC) to assign specific permissions to users.
+
+2. **Authorization:** Control what authenticated users can do.
+
+   - Define roles and assign them to users to limit their actions within the database.
+
+3. **Encryption:**
+
+   - **In-Transit:** Use TLS/SSL to encrypt data transmitted between clients and the MongoDB server.
+  
+   - **At-Rest:** Enable encryption for data stored on disk using MongoDB's WiredTiger storage engine.
+
+4. **Network Security:**
+
+   - Bind MongoDB to a specific IP address to limit exposure.
+  
+   - Use firewalls to restrict access to the MongoDB server.
+  
+   - Deploy MongoDB in a trusted network environment.
+
+5. **Auditing:** Track and log database activities to monitor for suspicious actions.
+
+   - Enable MongoDB auditing to record operations performed on the database.
+
+6. **Backup and Recovery:** Regularly back up your MongoDB data to prevent data loss.
+
+   - Use MongoDB's built-in backup tools or third-party solutions.
+
+7. **Update and Patch Management:** Keep MongoDB and its dependencies up to date to protect against vulnerabilities.
+
+   - Regularly apply security patches and updates.
+
+8. **Monitoring and Alerts:** Continuously monitor MongoDB for performance and security issues.
+
+   - Use monitoring tools like MongoDB Cloud Manager or third-party solutions to set up alerts for unusual activities.
+
+### Understanding Role Based Access Control
+
+- `Role-Based Access Control` (`RBAC`) is a method of regulating access to a database based on the roles assigned to users.
+
+- Each role encompasses a set of permissions that determine what actions a user can perform on the database.
+
+**Key Features:**
+
+1. **Roles:** A role is a collection of privileges. MongoDB provides built-in roles, and you can also create custom roles.
+
+2. **Privileges:** Privileges define the specific actions that can be performed on resources.
+
+3. **Users:** Users are assigned roles that grant them specific privileges.
+
+***1. Create a User with a Role***
+
+```javascript
+use myDatabase;
+db.createUser({
+  user: "appUser",
+  pwd: "securePassword",
+  roles: [
+    { role: "readWrite", db: "myDatabase" }
+  ]
+});
+```
+
+***2. Create a Custom Role***
+
+```javascript
+db.createRole({
+  role: "customRole",
+  privileges: [
+    { resource: { db: "myDatabase", collection: "" }, actions: ["find", "insert"] },
+    { resource: { db: "myDatabase", collection: "myCollection" }, actions: ["update", "remove"] }
+  ],
+  roles: []
+});
+```
+
+***3. Assign the Custom Role to a User***
+
+```javascript
+db.createUser({
+  user: "customUser",
+  pwd: "anotherSecurePassword",
+  roles: [
+    { role: "customRole", db: "myDatabase" }
+  ]
+});
+```

@@ -5,159 +5,37 @@
 
 ## Table of Contents
 
-- [MongoDB Reference](#mongodb-reference)
-  - [Table of Contents](#table-of-contents)
-  - [What is MongoDB?](#what-is-mongodb)
-  - [Key Features of MongoDB](#key-features-of-mongodb)
-  - [Differences Between MongoDB and Relational Databases](#differences-between-mongodb-and-relational-databases)
-  - [MongoDB Data Model](#mongodb-data-model)
-    - [BSON Data Types](#bson-data-types)
-    - [Example BSON Document](#example-bson-document)
-  - [Installation](#installation)
-    - [Windows](#windows)
-    - [macOS](#macos)
-    - [Ubuntu](#ubuntu)
-  - [Open MongoDB Shell](#open-mongodb-shell)
-    - [Expected Output](#expected-output)
-  - [Shell vs Driver](#shell-vs-driver)
-    - [MongoDB Shell](#mongodb-shell)
-    - [MongoDB Driver](#mongodb-driver)
-  - [Understanding Databases, Collections, and Documents](#understanding-databases-collections-and-documents)
-    - [Databases](#databases)
-    - [Collections](#collections)
-    - [Documents](#documents)
-    - [Example](#example)
-  - [Differences Between JSON and BSON Format](#differences-between-json-and-bson-format)
-  - [Default Storage Engines Used by Different Databases](#default-storage-engines-used-by-different-databases)
-  - [1. Creating Database and Collection](#1-creating-database-and-collection)
-    - [Show All Databases](#show-all-databases)
-    - [Create Database](#create-database)
-    - [Create a Collection](#create-a-collection)
-  - [Create a Document](#create-a-document)
-    - [insertOne Method](#insertone-method)
-    - [insertMany Method](#insertmany-method)
-    - [Create a Document with Custom `_Id`](#create-a-document-with-custom-_id)
-    - [Ordered Inserts](#ordered-inserts)
-    - [Unordered inserts](#unordered-inserts)
-    - [Write Concern and Journaling in MongoDB](#write-concern-and-journaling-in-mongodb)
-    - [What is Atomictiy?](#what-is-atomictiy)
-  - [Read a Document](#read-a-document)
-    - [find Method](#find-method)
-    - [find Method with Query](#find-method-with-query)
-    - [find Method with Projection](#find-method-with-projection)
-    - [findOne Method with Query](#findone-method-with-query)
-    - [findOne Method with Projection](#findone-method-with-projection)
-    - [find Method and Cursor Object](#find-method-and-cursor-object)
-    - [MongoDB Query Selectors](#mongodb-query-selectors)
-    - [Projection Operators](#projection-operators)
-    - [MongoDB Cursor Methods](#mongodb-cursor-methods)
-  - [Update a Document](#update-a-document)
-    - [updateOne Method](#updateone-method)
-    - [updateMany Method](#updatemany-method)
-    - [Updating Multiple Fields with `$set`](#updating-multiple-fields-with-set)
-    - [Increment and Decrement Values With `$inc` Operator](#increment-and-decrement-values-with-inc-operator)
-    - [`$min`, `$max`, and `$mul` in MongoDB](#min-max-and-mul-in-mongodb)
-    - [Getting Rid of Fields with `$unset` Operator](#getting-rid-of-fields-with-unset-operator)
-    - [`$rename` Operator in MongoDB](#rename-operator-in-mongodb)
-    - [`upsert` Option in MongoDB](#upsert-option-in-mongodb)
-    - [Adding Matched Array Elements With `$and` Operator](#adding-matched-array-elements-with-and-operator)
-    - [Adding Elements to an Array With `$push`](#adding-elements-to-an-array-with-push)
-    - [Updating a Matched Array Element With `$.`](#updating-a-matched-array-element-with-)
-    - [Updating All Array Elements With `$[]`](#updating-all-array-elements-with-)
-    - [Finding and Updating Specific Fields](#finding-and-updating-specific-fields)
-    - [Removing Elements from an Array With `$pull`](#removing-elements-from-an-array-with-pull)
-    - [UnderStanding `$addToSet`](#understanding-addtoset)
-  - [Delete a Document](#delete-a-document)
-    - [deleteOne Method](#deleteone-method)
-    - [deleteMany Method](#deletemany-method)
-  - [Embedded Documents and Arrays](#embedded-documents-and-arrays)
-    - [Embedded Document](#embedded-document)
-    - [Arrays of Data](#arrays-of-data)
-  - [Accessing Structured Data](#accessing-structured-data)
-    - [Query Objects](#query-objects)
-    - [Query Arrays](#query-arrays)
-    - [Query Array of Objects](#query-array-of-objects)
-  - [Resetting Database](#resetting-database)
-    - [Delete a Database](#delete-a-database)
-    - [Delete a Collection](#delete-a-collection)
-    - [Delete a Specific Document](#delete-a-specific-document)
-    - [Delete all Documents](#delete-all-documents)
-    - [Statistics about the Database](#statistics-about-the-database)
-  - [2. Schemas and Relations](#2-schemas-and-relations)
-    - [Why do we use Schemas?](#why-do-we-use-schemas)
-    - [Structuring Documents](#structuring-documents)
-    - [Data Types](#data-types)
-  - [Understanding Relations](#understanding-relations)
-    - [One-to-One Relationship - Embedding](#one-to-one-relationship---embedding)
-    - [One-to-One Relationship - Referencing](#one-to-one-relationship---referencing)
-    - [One-to-Many Relationship - Embedding](#one-to-many-relationship---embedding)
-    - [One-to-Many Relationship - Referencing](#one-to-many-relationship---referencing)
-    - [Many-to-Many Relationship - Embedding](#many-to-many-relationship---embedding)
-    - [Many-to-Many Relationship - Referencing](#many-to-many-relationship---referencing)
-  - [Schema Validation](#schema-validation)
-    - [Define a Schema](#define-a-schema)
-    - [Create the Collection with Validation](#create-the-collection-with-validation)
-    - [Insert Document](#insert-document)
-    - [Handle Validation Errors](#handle-validation-errors)
-  - [3. Working with Indexes](#3-working-with-indexes)
-    - [What are Indexes and Why do we use them?](#what-are-indexes-and-why-do-we-use-them)
-    - [Why Use Indexes?](#why-use-indexes)
-    - [Creating an Index](#creating-an-index)
-    - [Removing Indexes](#removing-indexes)
-    - [Creating Compound Indexes](#creating-compound-indexes)
-    - [Using Indexes for Sorting](#using-indexes-for-sorting)
-    - [Default Index](#default-index)
-    - [Understanding Partial Filter Expressions](#understanding-partial-filter-expressions)
-    - [Time to Live (TTL) Index in MongoDB](#time-to-live-ttl-index-in-mongodb)
-    - [Understanding Covered Queries](#understanding-covered-queries)
-    - [How MongoDB Rejects a Query Plan](#how-mongodb-rejects-a-query-plan)
-    - [Multi-Key Indexes in MongoDB](#multi-key-indexes-in-mongodb)
-    - [Text Indexes in MongoDB](#text-indexes-in-mongodb)
-    - [Text Indexes and Sorting in MongoDB](#text-indexes-and-sorting-in-mongodb)
-    - [Combining Text Index with Other Indexes in MongoDB](#combining-text-index-with-other-indexes-in-mongodb)
-    - [Excluding Words in Text Index Queries in MongoDB](#excluding-words-in-text-index-queries-in-mongodb)
-    - [Setting the Default Language and Using Weights in MongoDB Text Indexes](#setting-the-default-language-and-using-weights-in-mongodb-text-indexes)
-    - [Building Indexes in MongoDB](#building-indexes-in-mongodb)
-    - [Importing JSON to MongoDB Shell](#importing-json-to-mongodb-shell)
-    - [More Details](#more-details)
-  - [4. Geospatial Data in MongoDB](#4-geospatial-data-in-mongodb)
-    - [Adding GeoJSON Data](#adding-geojson-data)
-    - [Creating a Geospatial Index](#creating-a-geospatial-index)
-    - [Querying GeoJSON Data](#querying-geojson-data)
-    - [Finding Places Inside a Certain Area With `$geoWithin`](#finding-places-inside-a-certain-area-with-geowithin)
-    - [Finding Out if a User is Inside a Specific Area with `$geoIntersects`](#finding-out-if-a-user-is-inside-a-specific-area-with-geointersects)
-    - [Finding Places Within Certain Radius With `$centerSphere`](#finding-places-within-certain-radius-with-centersphere)
-  - [5. Understanding Aggregation Framework](#5-understanding-aggregation-framework)
-    - [Transforming BirthDate Using `$dateToString`](#transforming-birthdate-using-datetostring)
-    - [Transforming BirthDate Using `$convert`](#transforming-birthdate-using-convert)
-    - [Understanding `$isoWeekYear` Operator](#understanding-isoweekyear-operator)
-    - [`$group` Vs `$project`](#group-vs-project)
-    - [Pushing Elements Into Newly Created Arrays](#pushing-elements-into-newly-created-arrays)
-    - [Understanding `$unwind` Stage](#understanding-unwind-stage)
-    - [Eliminating Duplicate Values](#eliminating-duplicate-values)
-    - [Using Projection With Arrays](#using-projection-with-arrays)
-    - [Getting The Length Of An Array](#getting-the-length-of-an-array)
-    - [Using `$filter` Operator](#using-filter-operator)
-    - [Applying Multiple Operations To Array](#applying-multiple-operations-to-array)
-    - [Understanding `$bucket`](#understanding-bucket)
-    - [Writing Pipeline Results Into a New Collection](#writing-pipeline-results-into-a-new-collection)
-    - [Working With `$geoNear` Stage](#working-with-geonear-stage)
-  - [6. Working With Numbers](#6-working-with-numbers)
-    - [1. **32-bit Integer (`NumberInt`):**](#1-32-bit-integer-numberint)
-    - [2. **64-bit Integer (`NumberLong`)**](#2-64-bit-integer-numberlong)
-    - [3. **Double (`NumberDouble`)**](#3-double-numberdouble)
-    - [4. **Decimal (`NumberDecimal`)**](#4-decimal-numberdecimal)
-  - [7. Performance , Fault Tolerancy And Deployment](#7-performance--fault-tolerancy-and-deployment)
-    - [Understanding Capped Collections](#understanding-capped-collections)
-    - [What are Replica Sets?](#what-are-replica-sets)
-    - [Understanding Sharding](#understanding-sharding)
-    - [Deploying a MongoDB server using MongoDB Atlas](#deploying-a-mongodb-server-using-mongodb-atlas)
-  - [8. Transaction](#8-transaction)
-    - [Use Cases for Transactions in MongoDB](#use-cases-for-transactions-in-mongodb)
-  - [9. Introduction Of Stitch](#9-introduction-of-stitch)
-    - [What is Stitch?](#what-is-stitch)
-  - [10. MongoDB and Security](#10-mongodb-and-security)
-    - [Understanding Role Based Access Control](#understanding-role-based-access-control)
+| No | Section            | Subsection  |
+|----|--------------------|-------------|
+| 1 | [**What is MongoDB?**](#what-is-mongodb) | |
+| 2 | [**Key Features of MongoDB**](#key-features-of-mongodb) | |
+| 3 | [**Differences Between MongoDB and Relational Databases**](#differences-between-mongodb-and-relational-databases) | |
+| 4 | [**MongoDB Data Model**](#mongodb-data-model) | **a.** [BSON Data Types](#bson-data-types) <br> **b.** [Example BSON Document](#example-bson-document) |
+| 5 | [**Installation**](#installation) | **a.** [Windows](#windows)<br> **b.** [macOS](#macos) <br> **c.** [Ubuntu](#ubuntu) |
+| 6 | [**Open MongoDB Shell**](#open-mongodb-shell) | **a.** [Expected Output](#expected-output) |
+| 7 | [**Shell vs Driver**](#shell-vs-driver) | **a.** [MongoDB Shell](#mongodb-shell) <br> **b.** [MongoDB Driver](#mongodb-driver) |
+| 8 | [**Understanding Databases, Collections, and Documents**](#understanding-databases-collections-and-documents) | **a.** [Databases](#databases) <br> **b.** [Collections](#collections) <br> **c.** [Documents](#documents) <br> **d.** [Example](#example) |
+| 9 | [**Differences Between JSON and BSON Format**](#differences-between-json-and-bson-format) | |
+| 10 | [**Default Storage Engines Used by Different Databases**](#default-storage-engines-used-by-different-databases) | |
+| 11 | [**Creating Database and Collection**](#1-creating-database-and-collection) | **a.** [Show All Databases](#show-all-databases) <br> **b.** [Create Database](#create-database) <br>  **c.** [Create a Collection](#create-a-collection) |
+| 12 | [**Create a Document**](#create-a-document) | **a.** [insertOne Method](#insertone-method) <br> **b.** [insertMany Method](#insertmany-method) <br> **c.** [Create a Document with Custom `_Id`](#create-a-document-with-custom-_id) <br> **d.** [Ordered Inserts](#ordered-inserts) <br> **e.** [Unordered inserts](#unordered-inserts) <br> **f.** [Write Concern and Journaling in MongoDB](#write-concern-and-journaling-in-mongodb) <br> **g.** [What is Atomictiy?](#what-is-atomictiy) |
+| 13 | [**Read a Document**](#read-a-document) | **a.** [find Method](#find-method) <br> **b.** [find Method with Query](#find-method-with-query) <br> **c.** [find Method with Projection](#find-method-with-projection) <br> **d.** [findOne Method with Query](#findone-method-with-query) <br> **e.** [findOne Method with Projection](#findone-method-with-projection) <br> **f.** [find Method and Cursor Object](#find-method-and-cursor-object) <br> **g.** [MongoDB Query Selectors](#mongodb-query-selectors) <br> **h.** [Projection Operators](#projection-operators) <br> **i.** [MongoDB Cursor Methods](#mongodb-cursor-methods) |
+| 14 | [**Update a Document**](#update-a-document) | **a.** [updateOne Method](#updateone-method) <br> **b.** [updateMany Method](#updatemany-method) <br> **c.** [Updating Multiple Fields with `$set`](#updating-multiple-fields-with-set) <br> **d.** [Increment and Decrement Values With `$inc` Operator](#increment-and-decrement-values-with-inc-operator) <br> **e.** [`$min`, `$max`, and `$mul` in MongoDB](#min-max-and-mul-in-mongodb) <br> **f.** [Getting Rid of Fields with `$unset` Operator](#getting-rid-of-fields-with-unset-operator) <br> **g.** [`$rename` Operator in MongoDB](#rename-operator-in-mongodb) <br> **h.** [`upsert` Option in MongoDB](#upsert-option-in-mongodb) <br> **i.** [Adding Matched Array Elements With `$and` Operator](#adding-matched-array-elements-with-and-operator) <br> **j.** [Adding Elements to an Array With `$push`](#adding-elements-to-an-array-with-push) <br> **k.** [Updating a Matched Array Element With `$.`](#updating-a-matched-array-element-with-) <br> **l.** [Updating All Array Elements With `$[]`](#updating-all-array-elements-with-) <br> **m.** [Finding and Updating Specific Fields](#finding-and-updating-specific-fields) <br> **n.** [Removing Elements from an Array With `$pull`](#removing-elements-from-an-array-with-pull) <br> **o.** [UnderStanding `$addToSet`](#understanding-addtoset) |
+| 15 | [**Delete a Document**](#delete-a-document) | **a.** [deleteOne Method](#deleteone-method) <br> **b.** [deleteMany Method](#deletemany-method) |
+| 16 | [**Embedded Documents and Arrays**](#embedded-documents-and-arrays) | **a.** [Embedded Document](#embedded-document) <br> **b.** [Arrays of Data](#arrays-of-data) |
+| 17 | [**Accessing Structured Data**](#accessing-structured-data) | **a.** [Query Objects](#query-objects) <br> **b.** [Query Arrays](#query-arrays) <br> **c.** [Query Array of Objects](#query-array-of-objects) |
+| 18 | [**Resetting Database**](#resetting-database) | **a.** [Delete a Database](#delete-a-database) <br> **b.** [Delete a Collection](#delete-a-collection) <br> **c.** [Delete a Specific Document](#delete-a-specific-document) <br> **d.** [Delete all Documents](#delete-all-documents) <br> **e.** [Statistics about the Database](#statistics-about-the-database) |
+| 19 | [**Schemas and Relations**](#2-schemas-and-relations) | **a.** [Why do we use Schemas?](#why-do-we-use-schemas) <br> **b.** [Structuring Documents](#structuring-documents) <br> **c.** [Data Types](#data-types) |
+| 20 | [**Understanding Relations**](#understanding-relations) | **a.** [One-to-One Relationship - Embedding](#one-to-one-relationship---embedding) <br> **b.** [One-to-One Relationship - Referencing](#one-to-one-relationship---referencing) <br> **c.** [One-to-Many Relationship - Embedding](#one-to-many-relationship---embedding) <br> **d.** [One-to-Many Relationship - Referencing](#one-to-many-relationship---referencing) <br> **e.** [Many-to-Many Relationship - Embedding](#many-to-many-relationship---embedding) <br> **f.** [Many-to-Many Relationship - Referencing](#many-to-many-relationship---referencing) |
+| 21 | [**Schema Validation**](#schema-validation) | **a.** [Define a Schema](#define-a-schema) <br> **b.** [Create the Collection with Validation](#create-the-collection-with-validation) <br> **c.** [Insert Document](#insert-document) <br> **d.** [Handle Validation Errors](#handle-validation-errors) |
+| 22 | [**Working with Indexes**](#3-working-with-indexes) | **a.** [What are Indexes and Why do we use them?](#what-are-indexes-and-why-do-we-use-them) <br> **b.** [Why Use Indexes?](#why-use-indexes) <br> **c.** [Creating an Index](#creating-an-index) <br> **d.** [Removing Indexes](#removing-indexes) <br> **e.** [Creating Compound Indexes](#creating-compound-indexes) <br> **f.** [Using Indexes for Sorting](#using-indexes-for-sorting) <br> **g.** [Default Index](#default-index) <br> **h.** [Understanding Partial Filter Expressions](#understanding-partial-filter-expressions) <br> **i.** [Time to Live (TTL) Index in MongoDB](#time-to-live-ttl-index-in-mongodb) <br> **j.** [Understanding Covered Queries](#understanding-covered-queries) <br> **k.** [How MongoDB Rejects a Query Plan](#how-mongodb-rejects-a-query-plan) <br> **l.** [Multi-Key Indexes in MongoDB](#multi-key-indexes-in-mongodb) <br> **m.** [Text Indexes in MongoDB](#text-indexes-in-mongodb) <br> **n.** [Text Indexes and Sorting in MongoDB](#text-indexes-and-sorting-in-mongodb) <br> **o.** [Combining Text Index with Other Indexes in MongoDB](#combining-text-index-with-other-indexes-in-mongodb) <br> **p.** [Excluding Words in Text Index Queries in MongoDB](#excluding-words-in-text-index-queries-in-mongodb) <br> **q.** [Setting the Default Language and Using Weights in MongoDB Text Indexes](#setting-the-default-language-and-using-weights-in-mongodb-text-indexes) <br> **r.** [Building Indexes in MongoDB](#building-indexes-in-mongodb) <br> **s.** [Importing JSON to MongoDB Shell](#importing-json-to-mongodb-shell) <br> **t.** [More Details](#more-details) |
+| 23 | [**Geospatial Data in MongoDB**](#4-geospatial-data-in-mongodb) | **a.** [Adding GeoJSON Data](#adding-geojson-data) <br> **b.** [Creating a Geospatial Index](#creating-a-geospatial-index) <br> **c.** [Querying GeoJSON Data](#querying-geojson-data) <br> **d.** [Finding Places Inside a Certain Area With `$geoWithin`](#finding-places-inside-a-certain-area-with-geowithin) <br> **e.** [Finding Out if a User is Inside a Specific Area with `$geoIntersects`](#finding-out-if-a-user-is-inside-a-specific-area-with-geointersects) <br> **f.** [Finding Places Within Certain Radius With `$centerSphere`](#finding-places-within-certain-radius-with-centersphere) |
+| 24 | [**Understanding Aggregation Framework**](#5-understanding-aggregation-framework) | **a.** [Transforming BirthDate Using `$dateToString`](#transforming-birthdate-using-datetostring) <br> **b.** [Transforming BirthDate Using `$convert`](#transforming-birthdate-using-convert) <br> **c.** [Understanding `$isoWeekYear` Operator](#understanding-isoweekyear-operator) <br> **d.** [`$group` Vs `$project`](#group-vs-project) <br> **e.** [Pushing Elements Into Newly Created Arrays](#pushing-elements-into-newly-created-arrays) <br> **f.** [Understanding `$unwind` Stage](#understanding-unwind-stage) <br> **g.** [Eliminating Duplicate Values](#eliminating-duplicate-values) <br> **h.** [Using Projection With Arrays](#using-projection-with-arrays) <br> **i.** [Getting The Length Of An Array](#getting-the-length-of-an-array) <br> **j.** [Using `$filter` Operator](#using-filter-operator) <br> **k.** [Applying Multiple Operations To Array](#applying-multiple-operations-to-array) <br> **l.** [Understanding `$bucket`](#understanding-bucket) <br> **m.** [Writing Pipeline Results Into a New Collection](#writing-pipeline-results-into-a-new-collection) <br> **n.** [Working With `$geoNear` Stage](#working-with-geonear-stage) |
+| 25 | [**Working With Numbers**](#6-working-with-numbers) | **a.** [32-bit Integer (`NumberInt`)](#1-32-bit-integer-numberint) <br> **b.** [64-bit Integer (`NumberLong`)](#2-64-bit-integer-numberlong) <br> **c.** [Double (`NumberDouble`)](#3-double-numberdouble) <br> **d.** [Decimal (`NumberDecimal`)](#4-decimal-numberdecimal) |
+| 26 | [**Performance , Fault Tolerancy And Deployment**](#7-performance--fault-tolerancy-and-deployment) | **a.** [Understanding Capped Collections](#understanding-capped-collections) <br> **b.** [What are Replica Sets?](#what-are-replica-sets) <br> **c.** [Understanding Sharding](#understanding-sharding) <br> **d.** [Deploying a MongoDB server using MongoDB Atlas](#deploying-a-mongodb-server-using-mongodb-atlas) |
+| 27 | [**Transaction**](#8-transaction) | **a.** [Use Cases for Transactions in MongoDB](#use-cases-for-transactions-in-mongodb) |
+| 28 | [**Introduction Of Stitch**](#9-introduction-of-stitch) | **a.** [What is Stitch?](#what-is-stitch) |
+| 29 | [**MongoDB and Security**](#10-mongodb-and-security) | **a.** [Understanding Role Based Access Control](#understanding-role-based-access-control) |
 
 ## What is MongoDB?
 

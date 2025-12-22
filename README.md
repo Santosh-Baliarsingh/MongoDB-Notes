@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD060 -->
 # MongoDB Reference
 
  ***I have recently started learning MongoDB and am compiling my notes here for reference. If you find this information useful, feel free to use it as a resource.***
@@ -16,7 +17,7 @@
 | 7 | [**Shell vs Driver**](#shell-vs-driver) | **a.** [MongoDB Shell](#mongodb-shell) <br> **b.** [MongoDB Driver](#mongodb-driver) |
 | 8 | [**Understanding Databases, Collections, and Documents**](#understanding-databases-collections-and-documents) | **a.** [Databases](#databases) <br> **b.** [Collections](#collections) <br> **c.** [Documents](#documents) <br> **d.** [Example](#example) |
 | 9 | [**Differences Between JSON and BSON Format**](#differences-between-json-and-bson-format) | |
-| 10 | [**Default Storage Engines Used by Different Databases**](#default-storage-engines-used-by-different-databases) | |
+| 10 | [**Default Storage Engines Used by Different Databases**](#default-storage-engines-used-by-different-databases) | **a.** [Very Important for Interviews](#very-important-for-interviews) |
 | 11 | [**Creating Database and Collection**](#1-creating-database-and-collection) | **a.** [Show All Databases](#show-all-databases) <br> **b.** [Create Database](#create-database) <br>  **c.** [Create a Collection](#create-a-collection) |
 | 12 | [**Create a Document**](#create-a-document) | **a.** [insertOne Method](#insertone-method) <br> **b.** [insertMany Method](#insertmany-method) <br> **c.** [Create a Document with Custom `_Id`](#create-a-document-with-custom-_id) <br> **d.** [Ordered Inserts](#ordered-inserts) <br> **e.** [Unordered inserts](#unordered-inserts) <br> **f.** [Write Concern and Journaling in MongoDB](#write-concern-and-journaling-in-mongodb) <br> **g.** [What is Atomictiy?](#what-is-atomictiy) |
 | 13 | [**Read a Document**](#read-a-document) | **a.** [find Method](#find-method) <br> **b.** [find Method with Query](#find-method-with-query) <br> **c.** [find Method with Projection](#find-method-with-projection) <br> **d.** [findOne Method with Query](#findone-method-with-query) <br> **e.** [findOne Method with Projection](#findone-method-with-projection) <br> **f.** [find Method and Cursor Object](#find-method-and-cursor-object) <br> **g.** [MongoDB Query Selectors](#mongodb-query-selectors) <br> **h.** [Projection Operators](#projection-operators) <br> **i.** [MongoDB Cursor Methods](#mongodb-cursor-methods) |
@@ -317,11 +318,45 @@ Understanding these core concepts is essential for working effectively with Mong
 | -------------------- | ------------------------------------------- |
 | MongoDB              | WiredTiger                                  |
 | MySQL                | InnoDB                                      |
-| PostgreSQL           | PostgreSQL's own storage engine             |
-| SQLite               | SQLite's own storage engine                 |
+| PostgreSQL           | Heap                                        |
+| SQLite               | B-Tree                                      |
 | MariaDB              | InnoDB (or Aria for certain configurations) |
 | Microsoft SQL Server | SQL Server's own storage engine             |
-| Oracle Database      | Oracle's own storage engine                 |
+| SQL Server           | B-Tree                                      |
+| IBM DB2              | B-Tree                                      |
+| SAP HANA             | Column Store (in-memory)                    |
+| CockroachDB          | RocksDB (LSM-tree)                          |
+| TiDB                 | TiKV (LSM-tree)                             |
+| Redis                | In-memory structures (Hash, Skiplist, List) |
+| Riak                 | Bitcask / LevelDB (LSM-tree)                |
+| Amazon DynamoDB      | LSM-tree inspired                           |
+| CouchDB              | Append-only B-tree                          |
+| Firestore            | LSM-tree based                              |
+| Apache Cassandra     | LSM-tree                                    |
+| HBase                | HDFS + LSM-tree                             |
+| ScyllaDB             | HDFS + LSM-tree                             |
+| Elasticsearch        | Lucene (Inverted Index)                     |
+| Solr                 | Lucene (Inverted Index)                     |
+| ClickHouse           | Column-oriented storage                     |
+| Apache Druid         | Column store + bitmap indexes               |
+| Neo4j                | Native Graph Storage                        |
+| JanusGraph           | Backend-dependent (Cassandra/HBase)         |
+| ArangoDB             | RocksDB (LSM-tree)                          |
+| LevelDB              | LSM-tree                                    |
+| RocksDB              | LSM-tree                                    |
+| Berkeley DB          | B-tree / Hash                               |
+
+### Very Important for Interviews
+
+- OLTP systems → B-tree / B+-tree
+
+- Write-heavy systems → LSM-tree
+
+- Search engines → Inverted Index
+
+- Analytics / OLAP → Column store
+
+- Graph DBs → Native graph storage
 
 ## 1. Creating Database and Collection
 
